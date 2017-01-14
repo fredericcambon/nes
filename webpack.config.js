@@ -5,7 +5,7 @@ var pkg = require( './package.json' );
 module.exports = {
     entry: './src/index.js',
     output: {
-        path: './dist/',
+        path: './lib/',
         library: pkg.name,
         libraryTarget: 'umd',
         filename: `${pkg.name}.js`
