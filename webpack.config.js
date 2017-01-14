@@ -12,10 +12,6 @@ module.exports = {
     },
     devtool: 'source-map',
 
-    // this is for pixi.js
-    node: {
-        fs: 'empty'
-    },
     module: {
         loaders: [ {
             test: /\.jsx?$/,
@@ -25,10 +21,6 @@ module.exports = {
                 presets: [ 'react', 'es2015', 'stage-0' ],
                 compact: false
             }
-        } ],
-        postLoaders: [ {
-            include: path.resolve( __dirname, 'node_modules/pixi.js' ),
-            loader: 'transform?brfs'
         } ]
     }
 }
