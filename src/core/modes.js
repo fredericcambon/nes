@@ -8,6 +8,10 @@ import {
 } from './utils.js';
 
 export var modes = {
+    /*
+      Computes and returns a memory address (max 16bit)
+      http://wiki.nesdev.com/w/index.php/CPU_addressing_modes
+     */
     [ MODES.IMMEDIATE ]: ( cpu ) => {
         return cpu.pc + 1;
     },
@@ -70,7 +74,7 @@ export var modes = {
         return addr;
 
     },
-    // https://github.com/scottferg/Fergulator/blob/master/nes/6502.go#L203-L207
+    // TODO: Indirect jump is bugged on the NES, dig/adapt
     [ MODES.INDIRECT ]: ( cpu ) => {
         return cpu.read16indirect( cpu.read16( cpu.pc + 1 ) );
     }

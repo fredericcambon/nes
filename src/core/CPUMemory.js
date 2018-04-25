@@ -40,4 +40,4 @@ class CPUMemory {
 
 }
 
-export default CPUMemory
+export default CPUMemory;

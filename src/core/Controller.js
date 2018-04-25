@@ -4,6 +4,9 @@ import {
 
 
 class Controller {
+    /*
+      The 8 controller buttons are mapped on 8bits
+      */
     constructor() {
         this.buttons = new Array( 8 ).fill( 0 );
         // Switch

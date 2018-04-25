@@ -14,4 +14,4 @@ class Notifier {
 }
 
 
-export default Notifier
+export default Notifier;

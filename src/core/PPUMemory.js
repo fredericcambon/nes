@@ -34,8 +34,10 @@ class NameTable {
     }
 }
 
+
 class PaletteTable {
     /*
+      
      */
     constructor() {
         this.data = new Uint8Array( 32 ).fill( 0x00 );
@@ -71,11 +73,15 @@ class PaletteTable {
 class PPUMemory {
 
     /*
-     * CHR: 0x0000 => 0x2000
-     * Nametable: 0x2000 => 0x3f00
-     * Background palette: 0x3F00 => 0x3F10
-     * Sprite palette: 0x3F00 => 0x3F20
-     */
+
+     Aka. VRAM
+
+     CHR: 0x0000 => 0x2000
+     Nametable: 0x2000 => 0x3f00
+     Background palette: 0x3F00 => 0x3F10
+     Sprite palette: 0x3F00 => 0x3F20
+
+    */
 
     constructor() {
         this.paletteTable = new PaletteTable();
@@ -118,12 +124,12 @@ class PPUMemory {
         } else if ( addr < 0x3F00 ) {
             return this.nameTable.read8( this.mapper.mirrorType, addr );
         } else if ( addr < 0x4000 ) {
-            this.paletteTable.read8( addr )
+            this.paletteTable.read8( addr );
         } else {
             throw 'Unknown PPU addr ' + addr;
         }
-    }
+    };
 
 }
 
-export default PPUMemory
+export default PPUMemory;

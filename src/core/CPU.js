@@ -65,6 +65,31 @@ class CPU {
         this.stallCounter = 0;
     }
 
+    toJSON() {
+        return {
+            cycles: this.cycles,
+            b: this.b,
+            pc: this.pc,
+            sp: this.sp,
+            a: this.a,
+            x: this.x,
+            y: this.y,
+            c: this.c,
+            z: this.z,
+            i: this.i,
+            d: this.d,
+            v: this.v,
+            n: this.n,
+            interrupt: this.interrupt,
+            stallCounter: this.stallCounter
+        };
+    }
+
+    loadJSON( obj ) {
+
+    }
+
+
     connect( apu, ppu, controller ) {
         this.apu = apu;
         this.ppu = ppu;
@@ -72,7 +97,7 @@ class CPU {
     }
 
     connectROM( rom ) {
-        this.mapper = rom.mapper
+        this.mapper = rom.mapper;
     }
 
     stall() {

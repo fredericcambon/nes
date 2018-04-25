@@ -19,10 +19,10 @@ class ROM {
     */
     constructor( dataBuffer ) {
         var p = 0;
-        var byteArray = new Uint8Array( dataBuffer )
+        var byteArray = new Uint8Array( dataBuffer );
         this.header = byteArray.subarray( p, HEADER_SIZE );
 
-        p += HEADER_SIZE
+        p += HEADER_SIZE;
 
         this.nbrPRGBanks = this.header[ 4 ];
         this.nbrCHRBanks = this.header[ 5 ];
@@ -68,6 +68,16 @@ class ROM {
             }
         }
     }
+
+    toJSON() {
+        return {
+            nbrPRGBanks: this.nbrPRGBanks,
+            nbrCHRBanks: this.nbrCHRBanks,
+            mapperType: this.mapperType,
+            mirrorType: this.mirrorType,
+            region: this.region
+        };
+    }
 }
 
-export default ROM
+export default ROM;
