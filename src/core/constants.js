@@ -1,3 +1,8 @@
+export var RENDERING_MODES = {
+  NORMAL: 0,
+  SPLIT: 1
+};
+
 export var MODES = {
   ABSOLUTE: 0,
   ABSOLUTE_X: 1,

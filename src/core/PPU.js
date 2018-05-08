@@ -1,6 +1,6 @@
 import PPUMemory from "./PPUMemory";
 
-import { COLORS, SCANLINES, CYCLES } from "./constants";
+import { RENDERING_MODES, COLORS, SCANLINES, CYCLES } from "./constants";
 
 import { readTile } from "./utils";
 
@@ -29,6 +29,8 @@ class PPU {
     // temporary vram address (15 bit)
     // can also be thought of as the address of the top left onscreen tile.
     this.t = 0;
+    // Y, used to help compute vram address
+    this.y = 0;
     // fine x scroll (3 bit)
     this.x = 0;
     // write toggle (1 bit)
@@ -109,6 +111,7 @@ class PPU {
     this.bufferedData = 0; // for buffered reads
 
     // Buffered data
+    this.setRenderingMode(RENDERING_MODES.NORMAL);
     this.frameBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
     this.frameBackgroundBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
     this.frameSpriteBuffer = new Int16Array(256 * 240 * 4).fill(-1);
@@ -116,6 +119,10 @@ class PPU {
 
     this.frameReady = false;
   }
+
+  /**
+   * Utils methods
+   */
 
   connect(cpu) {
     this.cpu = cpu;
@@ -165,6 +172,17 @@ class PPU {
     this.frameBuffer.fill(0x00);
     this.frameReady = false;
   }
+
+  setRenderingMode(mode) {
+    this.renderingMode = {
+      [RENDERING_MODES.NORMAL]: this.normalRenderingMode,
+      [RENDERING_MODES.SPLIT]: this.splitRenderingMode
+    }[mode];
+  }
+
+  /**
+   * NES emulator related methods
+   */
 
   read8(address) {
     /**
@@ -238,7 +256,6 @@ class PPU {
         this.fSpriteSize = (value >> 5) & 1;
         this.fMasterSlave = (value >> 6) & 1;
         this.nmiOutput = ((value >> 7) & 1) === 1;
-        // t: ....BA.. ........ = d: ......BA
         this.t = (this.t & 0xf3ff) | ((value & 0x03) << 10);
         break;
       }
@@ -274,15 +291,10 @@ class PPU {
          * TODO
          */
         if (this.w === 0) {
-          // t: ........ ...HGFED = d: HGFED...
-          // x:               CBA = d: .....CBA
-          // w:                   = 1
           this.t = (this.t & 0xffe0) | (value >> 3);
           this.x = value & 0x07;
           this.w = 1;
         } else {
-          // t: .CBA..HG FED..... = d: HGFEDCBA
-          // w:                   = 0
           this.t = (this.t & 0x8fff) | ((value & 0x07) << 12);
           this.t = (this.t & 0xfc1f) | ((value & 0xf8) << 2);
           this.w = 0;
@@ -291,15 +303,9 @@ class PPU {
       }
       case 0x2006: {
         if (this.w === 0) {
-          // t: ..FEDCBA ........ = d: ..FEDCBA
-          // t: .X...... ........ = 0
-          // w:                   = 1
           this.t = (this.t & 0x80ff) | ((value & 0x3f) << 8);
           this.w = 1;
         } else {
-          // t: ........ HGFEDCBA = d: HGFEDCBA
-          // v                    = t
-          // w:                   = 0
           this.t = (this.t & 0xff00) | value;
           this.v = this.t;
           this.w = 0;
@@ -317,6 +323,7 @@ class PPU {
         break;
       }
       case 0x4014: {
+        // TODO: Check if correct addres value
         var address = value << 8;
         var oldOamAddress = this.oamAddress;
 
@@ -431,11 +438,28 @@ class PPU {
     buffer[i + 3] = 0xff;
   }
 
+  normalRenderingMode(pos, colorPos, c, isBackgroundPixel) {
+    this.setColorToBuffer(this.frameBuffer, colorPos, c);
+  }
+
+  splitRenderingMode(pos, colorPos, c, isBackgroundPixel) {
+    this.frameColorBuffer[pos] = c;
+
+    if (isBackgroundPixel) {
+      this.setColorToBuffer(this.frameBackgroundBuffer, colorPos, c);
+    } else {
+      this.setColorToBuffer(this.frameSpriteBuffer, colorPos, c);
+      this.setColorToBuffer(this.frameBackgroundBuffer, colorPos, 0x00);
+    }
+  }
+
   renderPixel() {
     /**
      * Render either a background or sprite pixel or a black pixel
      * Executed 256 times per visible (240) scanline
      */
+
+    // TODO: Define variables in constructor, too expansive to allocate at each tick
     var x = this.cycle - 1;
     var y = this.scanline;
     var color = 0;
@@ -480,17 +504,9 @@ class PPU {
     // Fills the buffer at pos `x`, `y` with rgb color `c`
     var c = COLORS[this.memory.paletteTable.read8(color)];
     var pos = y * 256 + x;
-    var i = pos * 4;
+    var colorPos = pos * 4;
 
-    this.setColorToBuffer(this.frameBuffer, i, c);
-    this.frameColorBuffer[pos] = c;
-
-    if (isBackgroundPixel) {
-      this.setColorToBuffer(this.frameBackgroundBuffer, i, c);
-    } else {
-      this.setColorToBuffer(this.frameSpriteBuffer, i, c);
-      this.setColorToBuffer(this.frameBackgroundBuffer, i, 0x00);
-    }
+    this.renderingMode(pos, colorPos, c, isBackgroundPixel);
   }
 
   fetchSpritePattern(tileData, i, row) {
@@ -688,28 +704,26 @@ class PPU {
         // fine Y = 0
         this.v = this.v & 0x8fff;
         // let y = coarse Y
-        var y = (this.v & 0x03e0) >> 5;
-        if (y === 29) {
+        this.y = (this.v & 0x03e0) >> 5;
+        if (this.y === 29) {
           // coarse Y = 0
-          y = 0;
+          this.y = 0;
           // switch vertical nametable
           this.v = this.v ^ 0x0800;
-        } else if (y === 31) {
+        } else if (this.y === 31) {
           // coarse Y = 0, nametable not switched
-          y = 0;
+          this.y = 0;
         } else {
           // increment coarse Y
-          y++;
+          this.y++;
         }
         // put coarse Y back into v
-        this.v = (this.v & 0xfc1f) | (y << 5);
+        this.v = (this.v & 0xfc1f) | (this.y << 5);
       }
     }
 
     if (this.cycleType === CYCLES.COPY_X) {
       // https://wiki.nesdev.com/w/index.php/PPU_scrolling#At_dot_257_of_each_scanline
-      // hori(v) = hori(t)
-      // v: .....F.. ...EDCBA = t: .....F.. ...EDCBA
       this.v = (this.v & 0xfbe0) | (this.t & 0x041f);
     }
   }
@@ -736,8 +750,6 @@ class PPU {
 
     if (this.cycleType === CYCLES.COPY_Y) {
       // https://wiki.nesdev.com/w/index.php/PPU_scrolling#During_dots_280_to_304_of_the_pre-render_scanline_.28end_of_vblank.29
-      // vert( v ) = vert( t )
-      // v: .IHGF.ED CBA..... = t: .IHGF.ED CBA.....
       this.v = (this.v & 0x841f) | (this.t & 0x7be0);
     }
 
