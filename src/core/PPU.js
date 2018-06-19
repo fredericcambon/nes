@@ -71,6 +71,8 @@ class PPU {
     // Byte 1 => Bank nbr (address in mapper)
     // Byte 2 => Attributes (priority, hori. vert. switch)
     // Byte 3 => X position
+
+    // FIXME: Should be in PPUMemory
     this.oamData = new Uint8Array(256);
 
     // 0x2000 PPUCTRL
@@ -118,6 +120,19 @@ class PPU {
     this.frameColorBuffer = new Uint32Array(256 * 240).fill(0x00);
 
     this.frameReady = false;
+
+    //
+    // Debug data & variables
+    //
+    this.patternTable1 = new Uint8Array(160 * 160 * 4).fill(0xff);
+    this.patternTable2 = new Uint8Array(160 * 160 * 4).fill(0xff);
+
+    this.patternTablesColors = [
+      [0xff, 0xff, 0xff],
+      [0x33, 0x33, 0x33],
+      [0xbf, 0xbf, 0xbf],
+      [0x00, 0x00, 0x00]
+    ];
   }
 
   /**
@@ -130,6 +145,63 @@ class PPU {
 
   connectROM(rom) {
     this.memory.mapper = rom.mapper;
+  }
+
+  _parsePatternTable(_from, to, patternTable) {
+    var value = null;
+    var lowTileData = 0;
+    var highTileData = 0;
+    var v = 0;
+    var i = _from;
+    var y = 0;
+    var z = 0;
+    var s = 0;
+
+    while (i < to) {
+      lowTileData = this.memory.read8(i);
+      highTileData = this.memory.read8(i + 8);
+
+      z = 0;
+
+      while (z < 8) {
+        value = (((lowTileData >> z) & 1) << 1) + ((highTileData >> z) & 1);
+        //v = ((i + (i % 8) * 64 - i % 64) * 64 + z) * 4; // YOLO
+        v = (i % 8) * 160; // Tmp vertical position
+        v += y * 160; // Permanent vertical position;
+        v += 7 - z; // horizontal position
+        v += (s % 16) * 8 + (s % 16) * 2; // 16 per line
+        v *= 4;
+
+        patternTable[v] = this.patternTablesColors[value][0];
+        patternTable[v + 1] = this.patternTablesColors[value][1];
+        patternTable[v + 2] = this.patternTablesColors[value][2];
+        patternTable[v + 3] = 0xff;
+
+        z++;
+      }
+
+      if (i % 256 === 0 && i > _from) {
+        y += 10;
+      }
+
+      i++;
+
+      if (i % 8 == 0) {
+        i += 8;
+        s++;
+      }
+    }
+    return patternTable;
+  }
+
+  getPatternTables() {
+    /**
+       Used for debugging
+    */
+    return [
+      this._parsePatternTable(0, 4096, this.patternTable1),
+      this._parsePatternTable(4096, 8192, this.patternTable2)
+    ];
   }
 
   reset() {
@@ -672,6 +744,8 @@ class PPU {
       return CYCLES.COPY_X;
     } else if (this.cycle > 279 && this.cycle < 305) {
       return CYCLES.COPY_Y;
+    } else if (this.cycle == 340) {
+      return CYCLES.MAPPER_TICK;
     } else {
       return CYCLES.IDLE;
     }
@@ -758,6 +832,10 @@ class PPU {
     if (this.cycleType == CYCLES.ONE) {
       this.clearVerticalBlank();
     }
+
+    if (this.cycleType === CYCLES.MAPPER_TICK) {
+      this.memory.mapper.tick();
+    }
   }
 
   doVisibleLine() {
@@ -789,6 +867,10 @@ class PPU {
 
     if (this.cycleType === CYCLES.SPRITES) {
       this.fetchAndStoreSprites();
+    }
+
+    if (this.cycleType === CYCLES.MAPPER_TICK) {
+      this.memory.mapper.tick();
     }
   }
 

@@ -1,5 +1,6 @@
 import NROM from "./mappers/NROM";
 import MMC1 from "./mappers/MMC1";
+import MMC3 from "./mappers/MMC3";
 import UXROM from "./mappers/UXROM";
 
 const HEADER_SIZE = 16;
@@ -55,6 +56,10 @@ class ROM {
       }
       case 2: {
         this.mapper = new UXROM(this);
+        break;
+      }
+      case 4: {
+        this.mapper = new MMC3(this);
         break;
       }
       default: {

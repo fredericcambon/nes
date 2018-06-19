@@ -11,9 +11,9 @@ export function readTile(
   reversed,
   flush
 ) {
-  /*
-        Helper method that appends a tile (8 bits) to `tileData`
-        by reading & concatenating lowTileByte, highTileByte and attributeTableByte.
+  /**
+     Helper method that appends a tile (8 bits) to `tileData`
+     by reading & concatenating lowTileByte, highTileByte and attributeTableByte.
     */
   var p1,
     p2 = 0;

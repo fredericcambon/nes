@@ -53,6 +53,15 @@ class CPU {
     this._opcodes = opcodes;
 
     this.stallCounter = 0;
+
+    // Tick variables
+    this.tmpCycles = 0;
+    this.instrCycles = 0;
+    this.instrCode = 0;
+    this.instrOpCode = 0;
+    this.instrMode = 0;
+    this.instrSize = 0;
+    this.addr = 0;
   }
 
   toJSON() {
@@ -85,6 +94,7 @@ class CPU {
 
   connectROM(rom) {
     this.mapper = rom.mapper;
+    this.mapper.cpu = this;
   }
 
   stall() {
@@ -108,7 +118,7 @@ class CPU {
   }
 
   tick() {
-    var _cycles = this.cycles;
+    this.tmpCycles = this.cycles;
     this.b = 0;
 
     // Stalled after PPU OAMDMA
@@ -131,6 +141,15 @@ class CPU {
           this.cycles += 7;
           break;
         }
+        case INTERRUPTS.IRQ: {
+          if (this.i === 0) {
+            this.stackPush16(this.pc);
+            this.stackPush8(this.getFlags() & ~0x10);
+            this.pc = this.read16(0xfffe);
+            this.i = 1;
+            this.cycles += 7;
+          }
+        }
         default: {
           break;
         }
@@ -142,25 +161,30 @@ class CPU {
     }
 
     try {
-      var instrCode = this.read8(this.pc);
+      this.instrCode = this.read8(this.pc);
     } catch (err) {
       throw "Could not read next instruction: " + err;
     }
 
-    var [opCode, mode, size, cycles] = this._instructions[instrCode];
+    [
+      this.instrOpCode,
+      this.instrMode,
+      this.instrSize,
+      this.instrCycles
+    ] = this._instructions[this.instrCode];
 
-    var addr = this._modes[mode](this);
+    this.addr = this._modes[this.instrMode](this);
 
-    this.pc += size;
-    this.cycles += cycles;
+    this.pc += this.instrSize;
+    this.cycles += this.instrCycles;
 
     try {
-      this._opcodes[opCode](addr, this);
+      this._opcodes[this.instrOpCode](this.addr, this);
     } catch (err) {
       throw "Failed to process opcode: " + err;
     }
 
-    return this.cycles - _cycles;
+    return this.cycles - this.tmpCycles;
   }
 
   /**
@@ -168,6 +192,10 @@ class CPU {
    */
   triggerNMI() {
     this.interrupt = INTERRUPTS.NMI;
+  }
+
+  triggerIRQ() {
+    this.interrupt = INTERRUPTS.IRQ;
   }
 
   /**

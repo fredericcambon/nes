@@ -179,7 +179,8 @@ export var CYCLES = {
   COPY_X: 6,
   INCREMENT_Y: 7,
   IDLE: 8,
-  FLUSH_TILEDATA: 9
+  FLUSH_TILEDATA: 9,
+  MAPPER_TICK: 10
 };
 
 export var SCANLINES = {

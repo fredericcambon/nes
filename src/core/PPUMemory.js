@@ -36,6 +36,7 @@ class NameTable {
 class PaletteTable {
   /**
    * Color lookup table (4 colors, 1 color = 1byte)
+   // FIXME, 1byte or 8 here?
    */
   constructor() {
     this.data = new Uint8Array(32).fill(0x00);
@@ -78,9 +79,9 @@ class PPUMemory {
    *   Sprite palette: 0x3F00 => 0x3F20
    *
    */
-
   constructor() {
     this.paletteTable = new PaletteTable();
+    // Unused yet. should be
     this.oam = new Uint8Array(256).fill(0x00);
     this.nameTable = new NameTable();
     this.mapper = null;

@@ -3,6 +3,7 @@ import PPU from "./PPU";
 import ROM from "./ROM";
 import APU from "./APU";
 import Controller from "./Controller";
+import { MODES, OPCODES } from "./constants.js";
 
 import fetchROM from "../utils/Request";
 import Notifier from "../utils/Notifier";
@@ -25,6 +26,11 @@ class Console extends Notifier {
     this.ppu.connect(this.cpu);
 
     this.frameReq = null;
+
+    // Debug variables
+    this.frameNbr = 0;
+    this.opCodesKeys = Object.keys(OPCODES);
+    this.modeKeys = Object.keys(MODES);
   }
 
   loadROM(path) {
@@ -37,6 +43,14 @@ class Console extends Notifier {
         this.reset();
       }.bind(this)
     );
+  }
+
+  loadROMData(data) {
+    // TODO: Should directly take in the data, not the path
+    this.rom = new ROM(data);
+    this.cpu.connectROM(this.rom);
+    this.ppu.connectROM(this.rom);
+    this.reset();
   }
 
   getRomInfo() {
@@ -70,11 +84,55 @@ class Console extends Notifier {
   }
 
   start() {
+    this._tick = this.tick;
+    this.frameReq = requestAnimationFrame(this.frame.bind(this));
+  }
+
+  startDebug() {
+    this._tick = this.tickDebug;
     this.frameReq = requestAnimationFrame(this.frame.bind(this));
   }
 
   stop() {
     cancelAnimationFrame(this.frameReq);
+  }
+
+  tickDebug() {
+    /**
+       Same a tick() but with additional notify calls for debug purposes.
+       Slows down the main loop which is why it needs a separate codepath
+     */
+    var cycles = 0;
+    cycles = this.cpu.tick();
+    cycles = cycles * 3;
+
+    this.notifyObservers("cpu-tick", [
+      this.cpu.instrCode,
+      this.opCodesKeys[this.cpu.instrOpCode],
+      this.modeKeys[this.cpu.instrMode],
+      this.cpu.instrSize,
+      this.cpu.instrCycles,
+      this.cpu.addr
+    ]);
+
+    for (; cycles > 0; cycles--) {
+      this.ppu.tick();
+
+      // Check when next scanline is done
+
+      this.notifyObservers("ppu-tick");
+
+      if (this.ppu.frameReady) {
+        this.notifyObservers("frame-ready", this.ppu.frameBuffer);
+        this.notifyObservers("frame-ready-debug");
+
+        this.ppu.acknowledgeFrame();
+        this.frameNbr++;
+        return false;
+      }
+    }
+
+    return true;
   }
 
   tick() {
@@ -102,7 +160,7 @@ class Console extends Notifier {
 
   frame() {
     while (true) {
-      if (!this.tick()) {
+      if (!this._tick()) {
         break;
       }
     }
