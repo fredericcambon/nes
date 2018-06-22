@@ -1,7 +1,7 @@
+/**
+ * http://wiki.nesdev.com/w/index.php/PPU_nametables
+ */
 class NameTable {
-  /*
-    http://wiki.nesdev.com/w/index.php/PPU_nametables
-    */
   constructor() {
     this.data = new Uint8Array(2048).fill(0x00);
     // http://wiki.nesdev.com/w/index.php/Mirroring
@@ -33,11 +33,11 @@ class NameTable {
   }
 }
 
+/**
+ * Color lookup table
+ * 8 palettes of 4 colors
+ */
 class PaletteTable {
-  /**
-   * Color lookup table (4 colors, 1 color = 1byte)
-   // FIXME, 1byte or 8 here?
-   */
   constructor() {
     this.data = new Uint8Array(32).fill(0x00);
   }
@@ -68,17 +68,17 @@ class PaletteTable {
   }
 }
 
+/**
+ *
+ *   Aka. VRAM
+ *
+ *   CHR: 0x0000 => 0x2000
+ *   Nametable: 0x2000 => 0x3f00
+ *   Background palette: 0x3F00 => 0x3F10
+ *   Sprite palette: 0x3F00 => 0x3F20
+ *
+ */
 class PPUMemory {
-  /**
-   *
-   *   Aka. VRAM
-   *
-   *   CHR: 0x0000 => 0x2000
-   *   Nametable: 0x2000 => 0x3f00
-   *   Background palette: 0x3F00 => 0x3F10
-   *   Sprite palette: 0x3F00 => 0x3F20
-   *
-   */
   constructor() {
     this.paletteTable = new PaletteTable();
     // Unused yet. should be

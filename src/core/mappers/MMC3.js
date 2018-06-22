@@ -34,9 +34,10 @@ class MMC3 extends Mapper {
     } else {
       this.irqCounter--;
       if (this.irqCounter === 0 && this.irqEnable) {
-        this.cpu.triggerIRQ();
+        return true;
       }
     }
+    return false;
   }
 
   read8(addr) {
@@ -168,7 +169,7 @@ class MMC3 extends Mapper {
     } else if (addr < 0x10000 && !is_even) {
       this.irqEnable = true;
     } else {
-      throw Error("Unknown control: " + addr);
+      throw "Unknown control: " + addr;
     }
   }
 }

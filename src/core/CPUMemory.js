@@ -1,13 +1,21 @@
+/**
+ * CPU RAM: 0x0000 => 0x2000
+ */
 class CPUMemory {
-  /**
-   * CPU RAM: 0x0000 => 0x2000
-   */
-
   constructor() {
     this.zp = new Uint8Array(256).fill(0xff);
     this.stack = new Uint8Array(256).fill(0xff);
     this.ram = new Uint8Array(1536).fill(0xff);
   }
+
+  /*
+  toJSON() {
+    return {
+      zp: this.zp,
+      stack: this.stack,
+      ram: this.ram
+    };
+  }*/
 
   read8(addr) {
     // 2k bits RAM

@@ -1,14 +1,20 @@
 import PPUMemory from "./PPUMemory";
 
-import { RENDERING_MODES, COLORS, SCANLINES, CYCLES } from "./constants";
+import {
+  INTERRUPTS,
+  RENDERING_MODES,
+  COLORS,
+  SCANLINES,
+  CYCLES
+} from "./constants";
 
 import { readTile } from "./utils";
 
+/**
+ * Picture Processing Unit.
+ * Handles graphics.
+ */
 class PPU {
-  /**
-   * Picture Processing Unit.
-   * Handles graphics.
-   */
   constructor() {
     this.memory = new PPUMemory();
     this.cycle = 0;
@@ -16,6 +22,8 @@ class PPU {
     this.scanline = 261;
     this.scanlineType = null;
     this.frame = 0;
+    this.interrupt = null;
+    this.action = null;
 
     //
     // PPU registers
@@ -51,6 +59,8 @@ class PPU {
 
     // Background temporary variables
     this.tileData = [];
+    this.lowTileByte = 0;
+    this.highTileByte = 0;
 
     // Sprite temporary variables
     this.spriteCount = 0;
@@ -74,6 +84,13 @@ class PPU {
 
     // FIXME: Should be in PPUMemory
     this.oamData = new Uint8Array(256);
+
+    //
+    // Registers
+    //
+
+    this.registerRead = 0;
+    this.registerBuffer = 0;
 
     // 0x2000 PPUCTRL
     // Current nametable 0: $2000; 1: $2400; 2: $2800; 3: $2C00
@@ -107,6 +124,7 @@ class PPU {
     this.fSpriteOverflow = 0;
 
     // 0x2003 OAMADDR
+    this.tmpOamAddress = 0;
     this.oamAddress = 0;
 
     // 0x2007 PPUDATA
@@ -139,10 +157,6 @@ class PPU {
    * Utils methods
    */
 
-  connect(cpu) {
-    this.cpu = cpu;
-  }
-
   connectROM(rom) {
     this.memory.mapper = rom.mapper;
   }
@@ -165,12 +179,11 @@ class PPU {
 
       while (z < 8) {
         value = (((lowTileData >> z) & 1) << 1) + ((highTileData >> z) & 1);
-        //v = ((i + (i % 8) * 64 - i % 64) * 64 + z) * 4; // YOLO
         v = (i % 8) * 160; // Tmp vertical position
         v += y * 160; // Permanent vertical position;
-        v += 7 - z; // horizontal position
-        v += (s % 16) * 8 + (s % 16) * 2; // 16 per line
-        v *= 4;
+        v += 7 - z; // Tmp horizontal position
+        v += (s % 16) * 8 + (s % 16) * 2; // Permanent horizontal position
+        v *= 4; // RGBA
 
         patternTable[v] = this.patternTablesColors[value][0];
         patternTable[v + 1] = this.patternTablesColors[value][1];
@@ -194,10 +207,10 @@ class PPU {
     return patternTable;
   }
 
+  /**
+   *  Used for debugging
+   */
   getPatternTables() {
-    /**
-       Used for debugging
-    */
     return [
       this._parsePatternTable(0, 4096, this.patternTable1),
       this._parsePatternTable(4096, 8192, this.patternTable2)
@@ -256,10 +269,8 @@ class PPU {
    * NES emulator related methods
    */
 
+  /*  Handles the read communication between CPU and PPU */
   read8(address) {
-    /**
-     * Handles the read communication between CPU and PPU
-     */
     switch (address) {
       case 0x2002: {
         /**
@@ -267,30 +278,30 @@ class PPU {
          * Used to describe the status of a PPU frame
          * Note: Resets write toggle `w`
          */
-        var result = this.register & 0x1f;
-        result = result | (this.fSpriteOverflow << 5);
-        result = result | (this.fSpriteZeroHit << 6);
+        this.registerRead = this.register & 0x1f;
+        this.registerRead = this.registerRead | (this.fSpriteOverflow << 5);
+        this.registerRead = this.registerRead | (this.fSpriteZeroHit << 6);
         if (this.nmiOccurred) {
           // Avoid reading the NMI right after it is set
           if (this.cycles !== 2 || this.scanline !== 241) {
-            result = result | (1 << 7);
+            this.registerRead = this.registerRead | (1 << 7);
           }
         }
         this.nmiOccurred = 0;
         this.w = 0;
 
-        return result;
+        return this.registerRead;
       }
       case 0x2004: {
         return this.oamData[this.oamAddress];
       }
       case 0x2007: {
-        var value = this.memory.read8(this.v);
+        this.registerRead = this.memory.read8(this.v);
         // Emulate buffered reads
         if (this.v % 0x4000 < 0x3f00) {
-          var buffered = this.bufferedData;
-          this.bufferedData = value;
-          value = buffered;
+          this.registerBuffer = this.bufferedData;
+          this.bufferedData = this.registerRead;
+          this.registerRead = this.registerBuffer;
         } else {
           this.bufferedData = this.memory.read8(this.v - 0x1000);
         }
@@ -300,17 +311,14 @@ class PPU {
         } else {
           this.v += 32;
         }
-        return value;
+        return this.registerRead;
       }
     }
     return 0;
   }
 
-  write8(address, value) {
-    /**
-     * Handles the write communication between CPU and PPU
-     */
-
+  /* Handles the write communication between CPU and PPU */
+  write8(address, value, cpuRead8) {
     // Pointer to the last value written to a register
     // Used by PPUSTATUS (0x2002)
     this.register = value;
@@ -360,7 +368,8 @@ class PPU {
       case 0x2005: {
         /**
          * 0x2005: PPUSCROLL
-         * TODO
+         * Update the scroll variables, aka which pixel of the nametable will be
+         * at the top left of the screen
          */
         if (this.w === 0) {
           this.t = (this.t & 0xffe0) | (value >> 3);
@@ -395,18 +404,7 @@ class PPU {
         break;
       }
       case 0x4014: {
-        // TODO: Check if correct addres value
-        var address = value << 8;
-        var oldOamAddress = this.oamAddress;
-
-        for (var i = 0; i < 256; i++) {
-          this.oamData[this.oamAddress] = this.cpu.read8(address);
-          this.oamAddress++;
-          address++;
-        }
-
-        this.cpu.stall();
-        this.oamAddress = oldOamAddress;
+        // 0x4014 is handled by the CPU to avoid using cpu methods here
         break;
       }
     }
@@ -433,16 +431,16 @@ class PPU {
   setVerticalBlank() {
     this.nmiOccurred = 1;
 
-    if (this.nmiOutput) {
-      this.cpu.triggerNMI();
-    }
+    //if (this.nmiOutput) {
+    //  this.cpu.triggerNMI();
+    //}
   }
 
+  /**
+   * Called at the end of vertical blank
+   * Prepares the PPU for next frame
+   */
   clearVerticalBlank() {
-    /**
-     * Called at the end of vertical blank
-     * Prepares the PPU for next frame
-     */
     this.nmiOccurred = 0;
     this.frameReady = true;
   }
@@ -460,14 +458,14 @@ class PPU {
     this.frameSpriteBuffer.fill(-1);
   }
 
+  /**
+   * Returns the current background pixel
+   * if background mode is enabled.
+   *
+   * This is where fine x is used as it points to
+   * the correct bit of the current tile to use.
+   */
   getCurrentBackgroundPixel() {
-    /**
-     * Return the current background pixel
-     * if background mode is enabled.
-     *
-     * This is where fine x is used as it points to
-     * the correct bit of the current tile to use.
-     */
     if (this.fShowBackground === 0) {
       return 0;
     }
@@ -475,11 +473,11 @@ class PPU {
     return this.tileData[this.x] & 0x0f;
   }
 
+  /**
+   * Return the current sprite pixel
+   * if sprite mode is enabled and there is a pixel to display.
+   */
   getCurrentSpritePixel() {
-    /**
-     * Return the current sprite pixel
-     * if sprite mode is enabled and there is a pixel to display.
-     */
     var color,
       offset = 0;
 
@@ -525,12 +523,11 @@ class PPU {
     }
   }
 
+  /**
+   * Render either a background or sprite pixel or a black pixel
+   * Executed 256 times per visible (240) scanline
+   */
   renderPixel() {
-    /**
-     * Render either a background or sprite pixel or a black pixel
-     * Executed 256 times per visible (240) scanline
-     */
-
     // TODO: Define variables in constructor, too expansive to allocate at each tick
     var x = this.cycle - 1;
     var y = this.scanline;
@@ -606,24 +603,24 @@ class PPU {
       address = 0x1000 * table + tile * 16 + row;
     }
     var a = (attributes & 3) << 2;
-    var lowTileByte = this.memory.read8(address);
-    var highTileByte = this.memory.read8(address + 8);
+    this.lowTileByte = this.memory.read8(address);
+    this.highTileByte = this.memory.read8(address + 8);
 
     readTile(
       tileData,
       a,
-      lowTileByte,
-      highTileByte,
+      this.lowTileByte,
+      this.highTileByte,
       (attributes & 0x40) === 0x40,
       true
     );
   }
 
+  /**
+   * Retrieves the sprites that are to be rendered on the next scanline
+   * Executed at the end of a scanline
+   */
   fetchAndStoreSprites() {
-    /**
-     * Retrieves the sprites that are to be rendered on the next scanline
-     * Executed at the end of a scanline
-     */
     var y,
       a,
       x,
@@ -661,17 +658,17 @@ class PPU {
     }
   }
 
+  /**
+   * Actions that should be done over 8 ticks
+   * but instead done into 1 call because YOLO.
+   *
+   * Retrieves the background tiles that are to be rendered on the next X bytes
+   *
+   * - Read the nametable byte using current `v`
+   * - Fetch corresponding attribute byte using current `v`
+   * - Read CHR/Pattern table low+high bytes
+   */
   fetchAndStoreBackground() {
-    /**
-     * Actions that should be done over 8 ticks
-     * but instead done into 1 call because YOLO.
-     *
-     * Retrieves the background tiles that are to be rendered on the next X bytes
-     *
-     * - Read the nametable byte using current `v`
-     * - Fetch corresponding attribute byte using current `v`
-     * - Read CHR/Pattern table low+high bytes
-     */
     var address,
       shift,
       fineY,
@@ -720,12 +717,11 @@ class PPU {
     );
   }
 
-  // As our dear Napoleon once said: A good sketch is better than a long speech
-  // https://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png
+  /**
+   * Determines the type of the cycle
+   * Refer to https://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png
+   */
   _cycleType() {
-    /**
-     * Determines the type of the cycle
-     */
     if (this.cycle === 0) {
       return CYCLES.ZERO;
     } else if (this.cycle === 1) {
@@ -751,10 +747,10 @@ class PPU {
     }
   }
 
+  /**
+   * Determines the type of the scanline
+   */
   _scanlineType() {
-    /**
-     * Determines the type of the scanline
-     */
     if (this.scanline < 240) {
       return SCANLINES.VISIBLE;
     } else if (this.scanline === 241) {
@@ -767,6 +763,8 @@ class PPU {
   }
 
   incrementVRam() {
+    // This one really is a mess
+    // Values are coming from nesdev, don't touch, don't break
     if (this.cycleType === CYCLES.INCREMENT_Y) {
       // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Y_increment
       // increment vert(v)
@@ -834,7 +832,9 @@ class PPU {
     }
 
     if (this.cycleType === CYCLES.MAPPER_TICK) {
-      this.memory.mapper.tick();
+      if (this.memory.mapper.tick()) {
+        return INTERRUPTS.IRQ;
+      }
     }
   }
 
@@ -870,8 +870,12 @@ class PPU {
     }
 
     if (this.cycleType === CYCLES.MAPPER_TICK) {
-      this.memory.mapper.tick();
+      if (this.memory.mapper.tick()) {
+        return INTERRUPTS.IRQ;
+      }
     }
+
+    return null;
   }
 
   doVBlankLine() {
@@ -882,7 +886,12 @@ class PPU {
     // Vertical Blank is set at second tick of scanline 241
     if (this.cycleType === CYCLES.ONE) {
       this.setVerticalBlank();
+      if (this.nmiOutput) {
+        return INTERRUPTS.NMI; // Clean this shit
+      }
     }
+
+    return null;
   }
 
   incrementCounters() {
@@ -909,26 +918,30 @@ class PPU {
     }
   }
 
+  /**
+   * Main function of PPU.
+   * Increments counters (cycle, scanline, frame)
+   * Executes one action based on scanline + cycle
+   */
   tick() {
-    /**
-     * Main function of PPU.
-     * Increments counters (cycle, scanline, frame)
-     * Executes one action based on scanline + cycle
-     */
     this.cycleType = this._cycleType();
     this.scanlineType = this._scanlineType();
 
     if (this.scanlineType === SCANLINES.VBLANK) {
-      this.doVBlankLine();
+      this.interrupt = this.doVBlankLine();
     } else if (this.fShowBackground !== 0 || this.fShowSprites !== 0) {
       if (this.scanlineType === SCANLINES.PRELINE) {
-        this.doPreline();
+        this.interrupt = this.doPreline();
       } else if (this.scanlineType === SCANLINES.VISIBLE) {
-        this.doVisibleLine();
+        this.interrupt = this.doVisibleLine();
       }
+    } else {
+      this.interrupt = null;
     }
 
     this.incrementCounters();
+
+    return this.interrupt;
   }
 }
 

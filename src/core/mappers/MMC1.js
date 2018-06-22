@@ -113,8 +113,8 @@ class MMC1 extends Mapper {
       this.prg.swapMode = 1;
     }
 
-    this.prg.fixed = bool(this.prgBankMode === 0 || this.prgBankMode === 1);
-    this.chr.fixed = bool(this.chrBankMode === 0);
+    this.prg.fixed = this.prgBankMode === 0 || this.prgBankMode === 1;
+    this.chr.fixed = this.chrBankMode === 0;
   }
 }
 

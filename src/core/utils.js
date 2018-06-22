@@ -3,6 +3,10 @@ export function isPageCrossed(addr1, addr2) {
   return addr1 >> 8 != addr2 >> 8;
 }
 
+/**
+ *  Helper method that appends a tile (8 bits) to `tileData`
+ *  by reading & concatenating lowTileByte, highTileByte and attributeTableByte.
+ */
 export function readTile(
   tileData,
   attributeTableByte,
@@ -11,10 +15,6 @@ export function readTile(
   reversed,
   flush
 ) {
-  /**
-     Helper method that appends a tile (8 bits) to `tileData`
-     by reading & concatenating lowTileByte, highTileByte and attributeTableByte.
-    */
   var p1,
     p2 = 0;
 

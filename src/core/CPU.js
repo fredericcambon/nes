@@ -64,8 +64,11 @@ class CPU {
     this.addr = 0;
   }
 
+  /*
+
   toJSON() {
     return {
+      memory: this.memory.toJSON(),
       cycles: this.cycles,
       b: this.b,
       pc: this.pc,
@@ -84,6 +87,8 @@ class CPU {
     };
   }
 
+  */
+
   loadJSON(obj) {}
 
   connect(apu, ppu, controller) {
@@ -93,8 +98,9 @@ class CPU {
   }
 
   connectROM(rom) {
-    this.mapper = rom.mapper;
-    this.mapper.cpu = this;
+    // Improve that
+    //this.mapper = rom.mapper;
+    //this.mapper.cpu = this;
   }
 
   stall() {
@@ -130,7 +136,7 @@ class CPU {
       return 0;
     }
 
-    // TODO maybe there's a cleaner way to handle interrupts
+    // TODO Not DRY
     if (this.interrupt !== null) {
       switch (this.interrupt) {
         case INTERRUPTS.NMI: {
@@ -227,7 +233,7 @@ class CPU {
       console.log("I/O REGISTERS");
       return 0;
     } else {
-      return this.mapper.read8(addr);
+      return this.ppu.memory.mapper.read8(addr);
     }
   }
 
@@ -253,7 +259,18 @@ class CPU {
       // mirrored from 0x2000 to 0x4000
       this.ppu.write8(0x2000 + addr % 8, value);
     } else if (addr == 0x4014) {
-      this.ppu.write8(0x4014, value);
+      // This might seem a bit odd but this avoids circular reference (ppu using cpu methods)
+      addr = value << 8;
+      this.ppu.tmpOamAddress = this.ppu.oamAddress;
+
+      for (var i = 0; i < 256; i++) {
+        this.ppu.oamData[this.ppu.oamAddress] = this.read8(addr);
+        this.ppu.oamAddress++;
+        addr++;
+      }
+
+      this.ppu.oamAddress = this.ppu.tmpOamAddress;
+      this.stall();
     } else if (addr == 0x4015) {
       this.apu.write8(addr, value);
     } else if (addr == 0x4016) {
@@ -261,15 +278,16 @@ class CPU {
     } else if (addr == 0x4017) {
       // TODO sound
     } else if (addr >= 0x6000) {
-      this.mapper.write8(addr, value);
+      // Write to mapper (handled by PPU)
+      this.ppu.memory.mapper.write8(address, value);
     } else if (addr < 0x6000) {
       // console.log('I/O REGISTERS');
     }
   }
 
-  /*
-     * Stack methods
-     */
+  /**
+   * Stack methods
+   */
 
   stackPush8(value) {
     this.memory.stack[this.sp] = value;

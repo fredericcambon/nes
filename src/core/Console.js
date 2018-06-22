@@ -3,16 +3,17 @@ import PPU from "./PPU";
 import ROM from "./ROM";
 import APU from "./APU";
 import Controller from "./Controller";
-import { MODES, OPCODES } from "./constants.js";
+import { MODES, OPCODES, INTERRUPTS } from "./constants.js";
 
+import { mergeDeep } from "../utils/Merge";
 import fetchROM from "../utils/Request";
 import Notifier from "../utils/Notifier";
 
+/**
+ * Main class for the emulator, controls the hardware emulation.
+ * Fires up events.
+ */
 class Console extends Notifier {
-  /**
-   * Main class for the emulator, controls the hardware emulation.
-   * Fires up events.
-   */
   constructor() {
     super();
     this.cpu = new CPU();
@@ -20,11 +21,12 @@ class Console extends Notifier {
     this.apu = new APU();
     this.controller = new Controller();
     this.rom = null;
+    this.cycles = 0;
+    this.interrupt = null;
+    this.quickSaveData = null;
 
     // CPU, APU, PPU and controller are cross referenced in the code
     this.cpu.connect(this.apu, this.ppu, this.controller);
-    this.ppu.connect(this.cpu);
-
     this.frameReq = null;
 
     // Debug variables
@@ -46,9 +48,7 @@ class Console extends Notifier {
   }
 
   loadROMData(data) {
-    // TODO: Should directly take in the data, not the path
     this.rom = new ROM(data);
-    this.cpu.connectROM(this.rom);
     this.ppu.connectROM(this.rom);
     this.reset();
   }
@@ -67,20 +67,29 @@ class Console extends Notifier {
     this.notifyObservers("nes-reset", this.ppu.frameBuffer);
   }
 
-  save() {
-    // TODO: Need rom path / name
-    var save_data = {
-      ROM: this.rom.toJSON(),
-      CPU: this.cpu.toJSON(),
-      PPU: this.ppu.toJSON()
-    };
+  quickSave() {
+    // Ok so, this is a bit of a mess here
+    // Save also bundles the current ROM, and our memory buffers take a lot of place.
+    // localStorage has a strict threshold for what you can store.
+    // To work around this, Make a clone of the current NES object and empty the memory buffers
+    var quickSaveData = JSON.parse(JSON.stringify(this.cpu));
 
-    console.log(save_data);
+    quickSaveData.ppu.frameBuffer = [];
+    quickSaveData.ppu.frameBackgroundBuffer = [];
+    quickSaveData.ppu.frameSpriteBuffer = [];
+    quickSaveData.ppu.frameColorBuffer = [];
+    quickSaveData.ppu.patternTable1 = [];
+    quickSaveData.ppu.patternTable2 = [];
+
+    this.notifyObservers("nes-quick-save");
+    localStorage.quickSave = JSON.stringify(quickSaveData);
   }
 
-  load(data) {
-    this.cpu.fromJSON(data.CPU);
-    this.ppu.fromJSON(data.ROM);
+  loadQuickSave(data) {
+    if (localStorage.quickSave) {
+      this.cpu = mergeDeep(this.cpu, JSON.parse(localStorage.quickSave));
+      this.notifyObservers("nes-load-quick-save");
+    }
   }
 
   start() {
@@ -97,14 +106,13 @@ class Console extends Notifier {
     cancelAnimationFrame(this.frameReq);
   }
 
+  /**
+   *  Same a tick() but with additional notify calls for debug purposes.
+   *  Slows down the main loop which is why it needs a separate codepath
+   */
   tickDebug() {
-    /**
-       Same a tick() but with additional notify calls for debug purposes.
-       Slows down the main loop which is why it needs a separate codepath
-     */
-    var cycles = 0;
-    cycles = this.cpu.tick();
-    cycles = cycles * 3;
+    this.cycles = this.cpu.tick();
+    this.cycles = this.cycles * 3;
 
     this.notifyObservers("cpu-tick", [
       this.cpu.instrCode,
@@ -115,9 +123,16 @@ class Console extends Notifier {
       this.cpu.addr
     ]);
 
-    for (; cycles > 0; cycles--) {
-      this.ppu.tick();
+    for (; this.cycles > 0; this.cycles--) {
+      this.interrupt = this.ppu.tick();
 
+      if (this.interrupt !== null) {
+        if (this.interrupt === INTERRUPTS.NMI) {
+          this.cpu.triggerNMI();
+        } else {
+          this.cpu.triggerIRQ();
+        }
+      }
       // Check when next scanline is done
 
       this.notifyObservers("ppu-tick");
@@ -136,12 +151,19 @@ class Console extends Notifier {
   }
 
   tick() {
-    var cycles = 0;
-    cycles = this.cpu.tick();
-    cycles = cycles * 3;
+    this.cycles = this.cpu.tick();
+    this.cycles = this.cycles * 3;
 
-    for (; cycles > 0; cycles--) {
-      this.ppu.tick();
+    for (; this.cycles > 0; this.cycles--) {
+      this.interrupt = this.ppu.tick();
+
+      if (this.interrupt !== null) {
+        if (this.interrupt === INTERRUPTS.NMI) {
+          this.cpu.triggerNMI();
+        } else {
+          this.cpu.triggerIRQ();
+        }
+      }
 
       if (this.ppu.frameReady) {
         this.notifyObservers("frame-ready", [

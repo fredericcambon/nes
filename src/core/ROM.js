@@ -8,14 +8,14 @@ const PRG_BANK_SIZE = 16384;
 const CHR_BANK_SIZE = 8192;
 
 class ROM {
-  /*
-        Parse a .nes file according to the INES file format
-        http://wiki.nesdev.com/w/index.php/INES
-        https://wiki.nesdev.com/w/index.php/CHR_ROM_vs._CHR_RAM
+  /**
+   * Parse a .nes file according to the INES file format
+   * http://wiki.nesdev.com/w/index.php/INES
+   * https://wiki.nesdev.com/w/index.php/CHR_ROM_vs._CHR_RAM
 
-        CHR => Pattern tables, the raw data to render by the PPU
-        PRG => The program, used by the CPU
-    */
+   * CHR => Pattern tables, the raw data to render by the PPU
+   * PRG => The program, used by the CPU
+   */
   constructor(dataBuffer) {
     var p = 0;
     var byteArray = new Uint8Array(dataBuffer);
@@ -68,15 +68,17 @@ class ROM {
     }
   }
 
+  /*
   toJSON() {
     return {
       nbrPRGBanks: this.nbrPRGBanks,
       nbrCHRBanks: this.nbrCHRBanks,
       mapperType: this.mapperType,
       mirrorType: this.mirrorType,
-      region: this.region
+      region: this.region,
+      mapper: this.mapper.toJSON()
     };
-  }
+  }*/
 }
 
 export default ROM;

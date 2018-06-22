@@ -2,11 +2,11 @@ import { MODES, OPCODES } from "./constants.js";
 
 import { isPageCrossed } from "./utils.js";
 
+/**
+ *   Computes and returns a memory address (max 16bit)
+ *   http://wiki.nesdev.com/w/index.php/CPU_addressing_modes
+ */
 export var modes = {
-  /**
-   *   Computes and returns a memory address (max 16bit)
-   *   http://wiki.nesdev.com/w/index.php/CPU_addressing_modes
-   */
   [MODES.IMMEDIATE]: cpu => {
     return cpu.pc + 1;
   },
