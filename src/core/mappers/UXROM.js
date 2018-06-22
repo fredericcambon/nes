@@ -6,6 +6,8 @@ import Mapper from "./Mapper";
 class UXROM extends Mapper {
   constructor(rom) {
     super(rom);
+
+    this.prg.switchBank(0x4000, 0x8000, this.prg.bankNbr / 16 - 1);
   }
 
   read8(addr) {
@@ -24,7 +26,7 @@ class UXROM extends Mapper {
     } else if (addr < 0x8000) {
       this.sram[addr - 0x6000] = value;
     } else {
-      this.prg.updateLowerBank(value & 0xf);
+      this.prg.switchBank(0, 0x4000, value & 0xf);
     }
   }
 }

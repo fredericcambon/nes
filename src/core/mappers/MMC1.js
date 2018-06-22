@@ -20,6 +20,8 @@ class MMC1 extends Mapper {
     this.conf = 0x0c;
     this.prgBankMode = 0;
     this.chrBankMode = 0;
+
+    this.prg.switchBank(0x4000, 0x8000, this.prg.bankNbr / 16 - 1);
   }
 
   read8(addr) {

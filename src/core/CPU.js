@@ -184,11 +184,7 @@ class CPU {
     this.pc += this.instrSize;
     this.cycles += this.instrCycles;
 
-    try {
-      this._opcodes[this.instrOpCode](this.addr, this);
-    } catch (err) {
-      throw "Failed to process opcode: " + err;
-    }
+    this._opcodes[this.instrOpCode](this.addr, this);
 
     return this.cycles - this.tmpCycles;
   }
@@ -279,7 +275,7 @@ class CPU {
       // TODO sound
     } else if (addr >= 0x6000) {
       // Write to mapper (handled by PPU)
-      this.ppu.memory.mapper.write8(address, value);
+      this.ppu.memory.mapper.write8(addr, value);
     } else if (addr < 0x6000) {
       // console.log('I/O REGISTERS');
     }
