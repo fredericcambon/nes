@@ -7,7 +7,6 @@ class Mapper {
   constructor(rom) {
     this.chr = new BankMemory(rom.chr, 0x2000, true);
     this.prg = new BankMemory(rom.prg, 0x8000, false);
-    //this.prg2 = new BankMemory(rom.prg, 0x8000, false);
     this.sram = new Array(0x2000).fill(0xff);
     this.mirrorType = rom.mirrorType;
   }

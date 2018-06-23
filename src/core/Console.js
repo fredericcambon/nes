@@ -129,7 +129,7 @@ class Console extends Notifier {
       if (this.interrupt !== null) {
         if (this.interrupt === INTERRUPTS.NMI) {
           this.cpu.triggerNMI();
-        } else {
+        } else if (this.interrupt === INTERRUPTS.IRQ) {
           this.cpu.triggerIRQ();
         }
       }
@@ -160,7 +160,7 @@ class Console extends Notifier {
       if (this.interrupt !== null) {
         if (this.interrupt === INTERRUPTS.NMI) {
           this.cpu.triggerNMI();
-        } else {
+        } else if (this.interrupt === INTERRUPTS.IRQ) {
           this.cpu.triggerIRQ();
         }
       }
