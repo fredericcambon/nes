@@ -15,6 +15,7 @@ export function readTile(
   reversed,
   flush
 ) {
+  // Document: Actually read tile ROW
   var p1,
     p2 = 0;
 

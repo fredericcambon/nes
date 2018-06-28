@@ -143,7 +143,8 @@ class PPU {
     // Debug data & variables
     //
     this.patternTable1 = new Uint8Array(160 * 160 * 4).fill(0xff);
-    this.patternTable2 = new Uint8Array(160 * 160 * 4).fill(0xff);
+    this.patternTable2 = new Uint8Array(160 * 160 * 4).fill(0xff); // 124 x 124 + 2px spacing
+    this.oamTable = new Uint8Array(80 * 160 * 4); // 64 x 124 + 2 px spacing
 
     this.patternTablesColors = [
       [0xff, 0xff, 0xff],
@@ -182,7 +183,7 @@ class PPU {
         v = (i % 8) * 160; // Tmp vertical position
         v += y * 160; // Permanent vertical position;
         v += 7 - z; // Tmp horizontal position
-        v += (s % 16) * 8 + (s % 16) * 2; // Permanent horizontal position
+        v += (s % 16) * 10; // Permanent horizontal position
         v *= 4; // RGBA
 
         patternTable[v] = this.patternTablesColors[value][0];
@@ -194,7 +195,7 @@ class PPU {
       }
 
       if (i % 256 === 0 && i > _from) {
-        y += 10;
+        y += 10; // 10 instead of 8 because need 2px spacing for display
       }
 
       i++;
@@ -210,12 +211,100 @@ class PPU {
   /**
    *  Used for debugging
    */
+
   getPatternTables() {
     return [
       this._parsePatternTable(0, 4096, this.patternTable1),
       this._parsePatternTable(4096, 8192, this.patternTable2)
     ];
   }
+
+  getOamTable() {
+    var tile,
+      table,
+      spriteSize,
+      attributes,
+      address,
+      lowTileData,
+      highTileData,
+      tileShiftX,
+      tileShiftY,
+      tableY,
+      value,
+      v,
+      isReversedVertically,
+      isReversedHorizontally;
+
+    tableY = 0;
+
+    // Not all sprites slots are used
+    // We must flush it at each frame otherwhise we'll end up
+    // with stale sprites
+    this.oamTable.fill(0xff);
+
+    for (let sprite = 0; sprite < 64; sprite++) {
+      tile = this.oamData[sprite * 4 + 1];
+
+      if (this.fSpriteSize === 0) {
+        spriteSize = 8;
+        table = this.fSpriteTable;
+      } else {
+        spriteSize = 16;
+        table = tile & 1;
+        tile = tile & 0xfe;
+      }
+
+      attributes = this.oamData[sprite * 4 + 2];
+      address = 0x1000 * table + tile * 16;
+      isReversedVertically = (attributes & 0x80) === 0x80;
+      isReversedHorizontally = (attributes & 0x40) === 0x40;
+
+      if (tile === 0) {
+        // Unused sprite
+        continue;
+      }
+
+      for (let tileY = 0; tileY < spriteSize; tileY++) {
+        lowTileData = this.memory.read8(address);
+        highTileData = this.memory.read8(address + 8);
+        tileShiftY = isReversedVertically ? 8 - tileY : tileY;
+
+        for (let tileX = 0; tileX < 8; tileX++) {
+          tileShiftX = isReversedHorizontally ? 8 - tileX : tileX;
+          value =
+            (((lowTileData >> tileShiftX) & 1) << 1) +
+            ((highTileData >> tileShiftX) & 1);
+          v = tileShiftY * 80; // Tmp vertical position
+          v += tableY * 80; // Permanent vertical position;
+          v += 7 - tileX; // Tmp horizontal position
+          v += (sprite % 8) * 8 + (sprite % 8) * 2; // Permanent horizontal position
+          v *= 4; // RGBA
+
+          this.oamTable[v] = this.patternTablesColors[value][0];
+          this.oamTable[v + 1] = this.patternTablesColors[value][1];
+          this.oamTable[v + 2] = this.patternTablesColors[value][2];
+          this.oamTable[v + 3] = 0xff;
+        }
+
+        address++;
+
+        if (this.fSpriteSize !== 0 && tileY == 7) {
+          tile++;
+          address = 0x1000 * table + tile * 16;
+        }
+      }
+
+      if (sprite % 8 === 0 && sprite > 0) {
+        tableY += 18;
+      }
+    }
+
+    return this.oamTable;
+  }
+
+  /**
+   * Init methods, configuration
+   */
 
   reset() {
     // Clean dat shit
@@ -266,7 +355,7 @@ class PPU {
   }
 
   /**
-   * NES emulator related methods
+   * Emulation related methods
    */
 
   /*  Handles the read communication between CPU and PPU */
@@ -410,10 +499,11 @@ class PPU {
     }
   }
 
-  // NTSC Timing Helper Functions
+  //
   // https://wiki.nesdev.com/w/index.php/PPU_scrolling
+  //
 
-  incrementX() {
+  updateScrollingX() {
     // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Coarse_X_increment
     // increment hori(v)
     // if coarse X === 31
@@ -428,12 +518,46 @@ class PPU {
     }
   }
 
+  updateScrollingY() {
+    // This one really is a mess
+    // Values are coming from nesdev, don't touch, don't break
+    if (this.cycleType === CYCLES.INCREMENT_Y) {
+      // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Y_increment
+      // increment vert(v)
+      // if fine Y < 7
+      if ((this.v & 0x7000) !== 0x7000) {
+        // increment fine Y
+        this.v += 0x1000;
+      } else {
+        // fine Y = 0
+        this.v = this.v & 0x8fff;
+        // let y = coarse Y
+        this.y = (this.v & 0x03e0) >> 5;
+        if (this.y === 29) {
+          // coarse Y = 0
+          this.y = 0;
+          // switch vertical nametable
+          this.v = this.v ^ 0x0800;
+        } else if (this.y === 31) {
+          // coarse Y = 0, nametable not switched
+          this.y = 0;
+        } else {
+          // increment coarse Y
+          this.y++;
+        }
+        // put coarse Y back into v
+        this.v = (this.v & 0xfc1f) | (this.y << 5);
+      }
+    }
+
+    if (this.cycleType === CYCLES.COPY_X) {
+      // https://wiki.nesdev.com/w/index.php/PPU_scrolling#At_dot_257_of_each_scanline
+      this.v = (this.v & 0xfbe0) | (this.t & 0x041f);
+    }
+  }
+
   setVerticalBlank() {
     this.nmiOccurred = 1;
-
-    //if (this.nmiOutput) {
-    //  this.cpu.triggerNMI();
-    //}
   }
 
   /**
@@ -584,14 +708,19 @@ class PPU {
     var attributes = this.oamData[i * 4 + 2];
     var address,
       table = 0;
+    var isReversedVertically = (attributes & 0x80) === 0x80;
+    var isReversedHorizontally = (attributes & 0x40) === 0x40;
+    var attributeTableByte = (attributes & 3) << 2;
 
     if (this.fSpriteSize === 0) {
-      if ((attributes & 0x80) === 0x80) {
+      // 8x8 sprites
+      if (isReversedVertically) {
         row = 7 - row;
       }
       address = 0x1000 * this.fSpriteTable + tile * 16 + row;
     } else {
-      if ((attributes & 0x80) === 0x80) {
+      // 16x8 sprites
+      if (isReversedVertically) {
         row = 15 - row;
       }
       table = tile & 1;
@@ -602,16 +731,16 @@ class PPU {
       }
       address = 0x1000 * table + tile * 16 + row;
     }
-    var a = (attributes & 3) << 2;
+
     this.lowTileByte = this.memory.read8(address);
     this.highTileByte = this.memory.read8(address + 8);
 
     readTile(
       tileData,
-      a,
+      attributeTableByte,
       this.lowTileByte,
       this.highTileByte,
-      (attributes & 0x40) === 0x40,
+      isReversedHorizontally,
       true
     );
   }
@@ -621,6 +750,7 @@ class PPU {
    * Executed at the end of a scanline
    */
   fetchAndStoreSprites() {
+    // FIXME: Could be rewritten, simplified, check getOamData
     var y,
       a,
       x,
@@ -634,6 +764,8 @@ class PPU {
       h = 16;
     }
 
+    // Here, we constantly iterate over the 64 possible
+    // sprites, we should not
     for (var i = 0; i < 64; i++) {
       y = this.oamData[i * 4 + 0];
       a = this.oamData[i * 4 + 2];
@@ -641,7 +773,7 @@ class PPU {
       row = this.scanline - y;
       if (row < 0 || row >= h) {
         continue;
-      }
+      } // LIGNE PAR LIGNE chec row
       if (this.spriteCount < 8) {
         this.fetchSpritePattern(this.sprites[this.spriteCount].pattern, i, row);
         this.sprites[this.spriteCount].x = x;
@@ -762,44 +894,6 @@ class PPU {
     }
   }
 
-  incrementVRam() {
-    // This one really is a mess
-    // Values are coming from nesdev, don't touch, don't break
-    if (this.cycleType === CYCLES.INCREMENT_Y) {
-      // https://wiki.nesdev.com/w/index.php/PPU_scrolling#Y_increment
-      // increment vert(v)
-      // if fine Y < 7
-      if ((this.v & 0x7000) !== 0x7000) {
-        // increment fine Y
-        this.v += 0x1000;
-      } else {
-        // fine Y = 0
-        this.v = this.v & 0x8fff;
-        // let y = coarse Y
-        this.y = (this.v & 0x03e0) >> 5;
-        if (this.y === 29) {
-          // coarse Y = 0
-          this.y = 0;
-          // switch vertical nametable
-          this.v = this.v ^ 0x0800;
-        } else if (this.y === 31) {
-          // coarse Y = 0, nametable not switched
-          this.y = 0;
-        } else {
-          // increment coarse Y
-          this.y++;
-        }
-        // put coarse Y back into v
-        this.v = (this.v & 0xfc1f) | (this.y << 5);
-      }
-    }
-
-    if (this.cycleType === CYCLES.COPY_X) {
-      // https://wiki.nesdev.com/w/index.php/PPU_scrolling#At_dot_257_of_each_scanline
-      this.v = (this.v & 0xfbe0) | (this.t & 0x041f);
-    }
-  }
-
   doPreline() {
     if (
       this.cycleType === CYCLES.ONE ||
@@ -812,7 +906,7 @@ class PPU {
         if (this.cycle < 256) {
           this.fetchAndStoreBackground();
         }
-        this.incrementX();
+        this.updateScrollingX();
       }
     }
 
@@ -825,7 +919,7 @@ class PPU {
       this.v = (this.v & 0x841f) | (this.t & 0x7be0);
     }
 
-    this.incrementVRam();
+    this.updateScrollingY();
 
     if (this.cycleType == CYCLES.ONE) {
       this.clearVerticalBlank();
@@ -850,7 +944,7 @@ class PPU {
         if (this.cycle < 256) {
           this.fetchAndStoreBackground();
         }
-        this.incrementX();
+        this.updateScrollingX();
       }
     } else if (this.cycleType === CYCLES.FLUSH_TILEDATA) {
       // Hackish hack, empty the remaining tile data at the beginning of prefetch
@@ -859,11 +953,11 @@ class PPU {
     } else if (this.cycleType === CYCLES.PREFETCH) {
       if (this.cycle % 8 === 0) {
         this.fetchAndStoreBackground();
-        this.incrementX();
+        this.updateScrollingX();
       }
     }
 
-    this.incrementVRam();
+    this.updateScrollingY();
 
     if (this.cycleType === CYCLES.SPRITES) {
       this.fetchAndStoreSprites();
