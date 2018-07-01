@@ -1,10 +1,9 @@
-import axios from 'axios';
+import axios from "axios";
 
-
-export default function fetchROM( path ) {
-    return axios( {
-        method: 'get',
-        url: '/data/' + path,
-        responseType: 'arraybuffer'
-    } );
+export default function fetchROM(path, full) {
+  return axios({
+    method: "get",
+    url: full ? path : "/data/" + path,
+    responseType: "arraybuffer"
+  });
 }

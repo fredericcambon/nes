@@ -11,7 +11,7 @@
     "scripts": {
         "build": "webpack",
         "watch": "webpack -d --watch",
-        "lint": "find app -name '*.js' | xargs js-beautify -r"
+        "lint": "prettier --write src/**/*.js"
     },
     "author": "Frédéric Cambon",
     "devDependencies": {
