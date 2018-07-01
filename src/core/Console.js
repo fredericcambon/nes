@@ -6,7 +6,6 @@ import Controller from "./Controller";
 import { MODES, OPCODES, INTERRUPTS } from "./constants.js";
 
 import { mergeDeep } from "../utils/Merge";
-import fetchROM from "../utils/Request";
 import Notifier from "../utils/Notifier";
 
 /**
@@ -39,30 +38,7 @@ class Console extends Notifier {
     this.modeKeys = Object.keys(MODES);
   }
 
-  loadROMUrl(path) {
-    return fetchROM(path, true).then(
-      function(res) {
-        this.rom = new ROM(res.data);
-        this.cpu.connectROM(this.rom);
-        this.ppu.connectROM(this.rom);
-        this.reset();
-      }.bind(this)
-    );
-  }
-
-  loadROM(path) {
-    // TODO: Should directly take in the data, not the path
-    return fetchROM(path, false).then(
-      function(res) {
-        this.rom = new ROM(res.data);
-        this.cpu.connectROM(this.rom);
-        this.ppu.connectROM(this.rom);
-        this.reset();
-      }.bind(this)
-    );
-  }
-
-  loadROMData(data) {
+  loadROM(data) {
     this.rom = new ROM(data);
     this.ppu.connectROM(this.rom);
     this.reset();
