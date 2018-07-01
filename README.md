@@ -8,7 +8,15 @@ I started implementing a UI using React.js, you can find the source code [here](
 
 ## Installing
 
-You'll need to build and import the code in a project to use it.
+### From NPM
+
+```shell
+npm install nes-emulator
+```
+
+### Locally
+
+Clone the repo and
 
 ```shell
 npm install
