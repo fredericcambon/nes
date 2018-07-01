@@ -1,24 +1,30 @@
 {
-    "name": "nes-emulator",
-    "version": "1.0.2",
-    "description": "NES emulator",
-    "license": "GPL-3.0",
-    "main": "src/index.js",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/fredericcambon/nes.git"
-    },
-    "scripts": {
-        "build": "webpack",
-        "watch": "webpack -d --watch",
-        "lint": "prettier --write src/**/*.js"
-    },
-    "author": "Frédéric Cambon",
-    "devDependencies": {
-        "babel-core": "^6.21.0",
-        "babel-loader": "^6.2.10",
-        "babel-preset-es2015": "^6.16.0",
-        "lodash": "^4.17.2",
-        "webpack": "^1.14.0"
-    }
+  "name": "nes-emulator",
+  "version": "1.0.2",
+  "description": "NES emulator",
+  "license": "GPL-3.0",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fredericcambon/nes.git"
+  },
+  "keywords": [
+    "nes",
+    "emulator",
+    "nintendo",
+    "emulation"
+  ],
+  "scripts": {
+    "build": "webpack",
+    "watch": "webpack -d --watch",
+    "lint": "prettier --write src/**/*.js"
+  },
+  "author": "Frédéric Cambon",
+  "devDependencies": {
+    "babel-core": "^6.21.0",
+    "babel-loader": "^6.2.10",
+    "babel-preset-es2015": "^6.16.0",
+    "lodash": "^4.17.2",
+    "webpack": "^1.14.0"
+  }
 }
