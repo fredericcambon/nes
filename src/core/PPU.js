@@ -8,8 +8,6 @@ import {
   CYCLES
 } from "./constants";
 
-import { readTile } from "./utils";
-
 /**
  * Picture Processing Unit.
  * Handles graphics.
@@ -21,9 +19,7 @@ class PPU {
     this.cycleType = null;
     this.scanline = 261;
     this.scanlineType = null;
-    this.frame = 0;
     this.interrupt = null;
-    this.action = null;
 
     //
     // PPU registers
@@ -57,33 +53,22 @@ class PPU {
     // Containers holding bufferized data to display
     //
 
-    // Background temporary variables
-    this.tileData = [];
+    // Background & Sprites temporary variables
+    this.backgroundTileBuffer = [];
     this.lowTileByte = 0;
     this.highTileByte = 0;
-
-    // Sprite temporary variables
+    this.attributeTableByte = 0;
     this.spriteCount = 0;
     this.sprites = new Array(8);
 
     for (var i = 0; i < 8; i++) {
       this.sprites[i] = {
-        pattern: [],
+        buffer: [],
         x: null,
         priority: null,
         index: null
       };
     }
-
-    // https://wiki.nesdev.com/w/index.php/PPU_OAM
-    // Max 64 sprites
-    // Byte 0 => Y position
-    // Byte 1 => Bank nbr (address in mapper)
-    // Byte 2 => Attributes (priority, hori. vert. switch)
-    // Byte 3 => X position
-
-    // FIXME: Should be in PPUMemory
-    this.oamData = new Uint8Array(256);
 
     //
     // Registers
@@ -130,6 +115,15 @@ class PPU {
     // 0x2007 PPUDATA
     this.bufferedData = 0; // for buffered reads
 
+    // Pixel rendering variables
+    this.backgroundColor = 0;
+    this.spriteColor = 0;
+    this.spriteIndex = 0;
+    this.isBackgroundPixel = true;
+    this.backgroundPixel = 0;
+    this.spritePixel = 0;
+    this.color = 0;
+
     // Buffered data
     this.setRenderingMode(RENDERING_MODES.NORMAL);
     this.frameBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
@@ -161,6 +155,10 @@ class PPU {
   connectROM(rom) {
     this.memory.mapper = rom.mapper;
   }
+
+  /**
+   *  Used for debugging
+   */
 
   _parsePatternTable(_from, to, patternTable) {
     var value = null;
@@ -208,10 +206,6 @@ class PPU {
     return patternTable;
   }
 
-  /**
-   *  Used for debugging
-   */
-
   getPatternTables() {
     return [
       this._parsePatternTable(0, 4096, this.patternTable1),
@@ -243,18 +237,17 @@ class PPU {
     this.oamTable.fill(0xff);
 
     for (let sprite = 0; sprite < 64; sprite++) {
-      tile = this.oamData[sprite * 4 + 1];
+      tile = this.memory.oam[sprite * 4 + 1];
+      spriteSize = this.getSpriteSize();
 
       if (this.fSpriteSize === 0) {
-        spriteSize = 8;
         table = this.fSpriteTable;
       } else {
-        spriteSize = 16;
         table = tile & 1;
         tile = tile & 0xfe;
       }
 
-      attributes = this.oamData[sprite * 4 + 2];
+      attributes = this.memory.oam[sprite * 4 + 2];
       address = 0x1000 * table + tile * 16;
       isReversedVertically = (attributes & 0x80) === 0x80;
       isReversedHorizontally = (attributes & 0x40) === 0x40;
@@ -267,13 +260,13 @@ class PPU {
       for (let tileY = 0; tileY < spriteSize; tileY++) {
         lowTileData = this.memory.read8(address);
         highTileData = this.memory.read8(address + 8);
-        tileShiftY = isReversedVertically ? 8 - tileY : tileY;
+        tileShiftY = isReversedVertically ? spriteSize - 1 - tileY : tileY;
 
         for (let tileX = 0; tileX < 8; tileX++) {
-          tileShiftX = isReversedHorizontally ? 8 - tileX : tileX;
+          tileShiftX = isReversedHorizontally ? 7 - tileX : tileX;
           value =
-            (((lowTileData >> tileShiftX) & 1) << 1) +
-            ((highTileData >> tileShiftX) & 1);
+            ((lowTileData >> tileShiftX) & 1) |
+            (((highTileData >> tileShiftX) & 1) << 1);
           v = tileShiftY * 80; // Tmp vertical position
           v += tableY * 80; // Permanent vertical position;
           v += 7 - tileX; // Tmp horizontal position
@@ -311,8 +304,6 @@ class PPU {
     this.memory.flush();
     this.cycle = 0;
     this.scanline = 261;
-    this.frame = 0;
-    this.oamData.fill(0);
     this.v = 0;
     this.t = 0;
     this.x = 0;
@@ -358,6 +349,10 @@ class PPU {
    * Emulation related methods
    */
 
+  getSpriteSize() {
+    return this.fSpriteSize ? 16 : 8;
+  }
+
   /*  Handles the read communication between CPU and PPU */
   read8(address) {
     switch (address) {
@@ -382,7 +377,7 @@ class PPU {
         return this.registerRead;
       }
       case 0x2004: {
-        return this.oamData[this.oamAddress];
+        return this.memory.oam[this.oamAddress];
       }
       case 0x2007: {
         this.registerRead = this.memory.read8(this.v);
@@ -450,7 +445,7 @@ class PPU {
       }
       case 0x2004: {
         // 0x2004: OAMDATA (write)
-        this.oamData[this.oamAddress] = value;
+        this.memory.oam[this.oamAddress] = value;
         this.oamAddress++;
         break;
       }
@@ -594,7 +589,7 @@ class PPU {
       return 0;
     }
 
-    return this.tileData[this.x] & 0x0f;
+    return this.backgroundTileBuffer[this.x] & 0x0f;
   }
 
   /**
@@ -602,8 +597,7 @@ class PPU {
    * if sprite mode is enabled and there is a pixel to display.
    */
   getCurrentSpritePixel() {
-    var color,
-      offset = 0;
+    var color, offset;
 
     if (this.fShowSprites === 0) {
       return [0, 0];
@@ -615,7 +609,7 @@ class PPU {
         continue;
       }
 
-      color = this.sprites[i].pattern[offset] & 0x0f;
+      color = this.sprites[i].buffer[offset] & 0x0f;
 
       if (color % 4 === 0) {
         continue;
@@ -625,6 +619,9 @@ class PPU {
     return [0, 0];
   }
 
+  /**
+   * Assign a RGBA color to the int8 array
+   */
   setColorToBuffer(buffer, i, color) {
     buffer[i] = (color >> 16) & 0xff;
     buffer[i + 1] = (color >> 8) & 0xff;
@@ -632,14 +629,14 @@ class PPU {
     buffer[i + 3] = 0xff;
   }
 
-  normalRenderingMode(pos, colorPos, c, isBackgroundPixel) {
+  normalRenderingMode(pos, colorPos, c) {
     this.setColorToBuffer(this.frameBuffer, colorPos, c);
   }
 
-  splitRenderingMode(pos, colorPos, c, isBackgroundPixel) {
+  splitRenderingMode(pos, colorPos, c) {
     this.frameColorBuffer[pos] = c;
 
-    if (isBackgroundPixel) {
+    if (this.isBackgroundPixel) {
       this.setColorToBuffer(this.frameBackgroundBuffer, colorPos, c);
     } else {
       this.setColorToBuffer(this.frameSpriteBuffer, colorPos, c);
@@ -652,90 +649,116 @@ class PPU {
    * Executed 256 times per visible (240) scanline
    */
   renderPixel() {
-    // TODO: Define variables in constructor, too expansive to allocate at each tick
     var x = this.cycle - 1;
     var y = this.scanline;
-    var color = 0;
-    var isBackgroundPixel = true;
+    var pos = y * 256 + x;
 
-    if (x < 8 && this.fShowLeftBackground === 0) {
-      var bgColor = 0;
-    } else {
-      var bgColor = this.getCurrentBackgroundPixel();
-    }
+    this.isBackgroundPixel = true;
+    this.color = 0;
+    this.backgroundColor =
+      x < 8 && this.fShowLeftBackground === 0
+        ? 0
+        : this.getCurrentBackgroundPixel();
 
-    if (x < 8 && this.fShowLeftSprites === 0) {
-      var [i, spriteColor] = [0, 0];
-    } else {
-      var [i, spriteColor] = this.getCurrentSpritePixel();
-    }
+    [this.spriteIndex, this.spriteColor] =
+      x < 8 && this.fShowLeftSprites === 0
+        ? [0, 0]
+        : this.getCurrentSpritePixel();
 
     // cf priority decision table https://wiki.nesdev.com/w/index.php/PPU_rendering
     // TODO: Looks like there's a display blinking bug on some games, cf Castlevania
-    var bgPixel = bgColor % 4;
-    var spritePixel = spriteColor % 4;
+    this.backgroundPixel = this.backgroundColor % 4;
+    this.spritePixel = this.spriteColor % 4;
 
-    if (bgPixel === 0 && spritePixel === 0) {
-      color = 0;
-    } else if (bgPixel === 0 && spritePixel !== 0) {
-      color = spriteColor;
-      isBackgroundPixel = false;
-    } else if (bgPixel !== 0 && spritePixel === 0) {
-      color = bgColor;
+    if (this.backgroundPixel === 0 && this.spritePixel === 0) {
+      this.color = 0;
+    } else if (this.backgroundPixel === 0 && this.spritePixel !== 0) {
+      this.color = this.spriteColor;
+      this.isBackgroundPixel = false;
+    } else if (this.backgroundPixel !== 0 && this.spritePixel === 0) {
+      this.color = this.backgroundColor;
     } else {
-      if (this.sprites[i].index === 0 && x < 255) {
+      if (this.sprites[this.spriteIndex].index === 0 && x < 255) {
         this.fSpriteZeroHit = 1;
       }
-      if (this.sprites[i].priority === 0) {
-        color = spriteColor;
-        isBackgroundPixel = false;
+      if (this.sprites[this.spriteIndex].priority === 0) {
+        this.color = this.spriteColor;
+        this.isBackgroundPixel = false;
       } else {
-        color = bgColor;
+        this.color = this.backgroundColor;
       }
     }
 
     // Fills the buffer at pos `x`, `y` with rgb color `c`
-    var c = COLORS[this.memory.paletteTable.read8(color)];
-    var pos = y * 256 + x;
-    var colorPos = pos * 4;
-
-    this.renderingMode(pos, colorPos, c, isBackgroundPixel);
+    this.renderingMode(
+      pos,
+      pos * 4,
+      COLORS[this.memory.paletteTable.read8(this.color)]
+    );
   }
 
-  fetchSpritePattern(tileData, i, row) {
+  /**
+   *  Helper method that appends a tile line to `tileData`
+   *  by reading & concatenating lowTileByte, highTileByte and attributeTableByte.
+   *  Must be called 8 times (or 16 for some sprites) to generate a sprite
+   */
+  readTileRow(
+    tileData,
+    attributeTableByte,
+    lowTileByte,
+    highTileByte,
+    isReversedHorizontally,
+    flush
+  ) {
+    var tileShiftX = 0;
+    var value = 0;
+
+    if (flush) {
+      tileData.length = 0;
+    }
+
+    for (var tileX = 0; tileX < 8; tileX++) {
+      tileShiftX = isReversedHorizontally ? tileX : 7 - tileX;
+      value =
+        attributeTableByte |
+        (((lowTileByte >> tileShiftX) & 1) |
+          (((highTileByte >> tileShiftX) & 1) << 1));
+
+      tileData.push(value);
+    }
+  }
+
+  fetchSpriteRow(tileData, i, row) {
     // Sub function of fetchAndStoreSprites
-    var tile = this.oamData[i * 4 + 1];
-    var attributes = this.oamData[i * 4 + 2];
+    var tile = this.memory.oam[i * 4 + 1];
+    var attributes = this.memory.oam[i * 4 + 2];
     var address,
       table = 0;
     var isReversedVertically = (attributes & 0x80) === 0x80;
     var isReversedHorizontally = (attributes & 0x40) === 0x40;
     var attributeTableByte = (attributes & 3) << 2;
+    var spriteSize = this.getSpriteSize();
 
     if (this.fSpriteSize === 0) {
-      // 8x8 sprites
-      if (isReversedVertically) {
-        row = 7 - row;
-      }
-      address = 0x1000 * this.fSpriteTable + tile * 16 + row;
+      table = this.fSpriteTable;
     } else {
-      // 16x8 sprites
-      if (isReversedVertically) {
-        row = 15 - row;
-      }
       table = tile & 1;
       tile = tile & 0xfe;
-      if (row > 7) {
-        tile++;
-        row -= 8;
-      }
-      address = 0x1000 * table + tile * 16 + row;
     }
+
+    row = isReversedVertically ? spriteSize - 1 - row : row;
+
+    if (row > 7) {
+      tile++;
+      row = row % 8;
+    }
+
+    address = 0x1000 * table + tile * 16 + row;
 
     this.lowTileByte = this.memory.read8(address);
     this.highTileByte = this.memory.read8(address + 8);
 
-    readTile(
+    this.readTileRow(
       tileData,
       attributeTableByte,
       this.lowTileByte,
@@ -749,35 +772,25 @@ class PPU {
    * Retrieves the sprites that are to be rendered on the next scanline
    * Executed at the end of a scanline
    */
-  fetchAndStoreSprites() {
-    // FIXME: Could be rewritten, simplified, check getOamData
-    var y,
-      a,
-      x,
-      row,
-      h = 0;
+  fetchAndStoreSpriteRows() {
+    var y, attributes, row;
     this.spriteCount = 0;
+    var spriteSize = this.getSpriteSize();
 
-    if (this.fSpriteSize === 0) {
-      h = 8;
-    } else {
-      h = 16;
-    }
-
-    // Here, we constantly iterate over the 64 possible
-    // sprites, we should not
     for (var i = 0; i < 64; i++) {
-      y = this.oamData[i * 4 + 0];
-      a = this.oamData[i * 4 + 2];
-      x = this.oamData[i * 4 + 3];
+      y = this.memory.oam[i * 4 + 0];
       row = this.scanline - y;
-      if (row < 0 || row >= h) {
+
+      if (row < 0 || row >= spriteSize) {
         continue;
-      } // LIGNE PAR LIGNE chec row
+      }
+
       if (this.spriteCount < 8) {
-        this.fetchSpritePattern(this.sprites[this.spriteCount].pattern, i, row);
-        this.sprites[this.spriteCount].x = x;
-        this.sprites[this.spriteCount].priority = (a >> 5) & 1;
+        attributes = this.memory.oam[i * 4 + 2];
+
+        this.fetchSpriteRow(this.sprites[this.spriteCount].buffer, i, row);
+        this.sprites[this.spriteCount].x = this.memory.oam[i * 4 + 3];
+        this.sprites[this.spriteCount].priority = (attributes >> 5) & 1;
         this.sprites[this.spriteCount].index = i;
       }
       this.spriteCount++;
@@ -800,16 +813,10 @@ class PPU {
    * - Fetch corresponding attribute byte using current `v`
    * - Read CHR/Pattern table low+high bytes
    */
-  fetchAndStoreBackground() {
+  fetchAndStoreBackgroundRow() {
     var address,
       shift,
       fineY,
-      a,
-      p1,
-      p2,
-      lowTileByte,
-      highTileByte,
-      attributeTableByte,
       nameTableByte = 0;
 
     // Fetch Name Table Byte
@@ -823,27 +830,24 @@ class PPU {
       ((this.v >> 4) & 0x38) |
       ((this.v >> 2) & 0x07);
     shift = ((this.v >> 4) & 4) | (this.v & 2);
-    attributeTableByte = ((this.memory.read8(address) >> shift) & 3) << 2;
+    this.attributeTableByte = ((this.memory.read8(address) >> shift) & 3) << 2;
 
     // Fetch Low Tile Byte
     fineY = (this.v >> 12) & 7;
     address = 0x1000 * this.fBackgroundTable + nameTableByte * 16 + fineY;
-    lowTileByte = this.memory.read8(address);
+    this.lowTileByte = this.memory.read8(address);
 
     // Fetch High Tile Byte
     fineY = (this.v >> 12) & 7;
     address = 0x1000 * this.fBackgroundTable + nameTableByte * 16 + fineY;
-    highTileByte = this.memory.read8(address + 8);
+    this.highTileByte = this.memory.read8(address + 8);
 
     // Store Tile Data
-    a = attributeTableByte;
-    p1, (p2 = 0);
-
-    readTile(
-      this.tileData,
-      attributeTableByte,
-      lowTileByte,
-      highTileByte,
+    this.readTileRow(
+      this.backgroundTileBuffer,
+      this.attributeTableByte,
+      this.lowTileByte,
+      this.highTileByte,
       false,
       false
     );
@@ -900,11 +904,11 @@ class PPU {
       this.cycleType === CYCLES.VISIBLE ||
       this.cycleType === CYCLES.PREFETCH
     ) {
-      this.tileData.shift();
+      this.backgroundTileBuffer.shift();
 
       if (this.cycle % 8 === 0) {
         if (this.cycle < 256) {
-          this.fetchAndStoreBackground();
+          this.fetchAndStoreBackgroundRow();
         }
         this.updateScrollingX();
       }
@@ -938,21 +942,21 @@ class PPU {
     }
 
     if (this.cycleType === CYCLES.VISIBLE) {
-      this.tileData.shift();
+      this.backgroundTileBuffer.shift();
 
       if (this.cycle % 8 === 0) {
         if (this.cycle < 256) {
-          this.fetchAndStoreBackground();
+          this.fetchAndStoreBackgroundRow();
         }
         this.updateScrollingX();
       }
     } else if (this.cycleType === CYCLES.FLUSH_TILEDATA) {
       // Hackish hack, empty the remaining tile data at the beginning of prefetch
       // Needs improvement
-      this.tileData.length = 0;
+      this.backgroundTileBuffer.length = 0;
     } else if (this.cycleType === CYCLES.PREFETCH) {
       if (this.cycle % 8 === 0) {
-        this.fetchAndStoreBackground();
+        this.fetchAndStoreBackgroundRow();
         this.updateScrollingX();
       }
     }
@@ -960,7 +964,7 @@ class PPU {
     this.updateScrollingY();
 
     if (this.cycleType === CYCLES.SPRITES) {
-      this.fetchAndStoreSprites();
+      this.fetchAndStoreSpriteRows();
     }
 
     if (this.cycleType === CYCLES.MAPPER_TICK) {
@@ -1007,7 +1011,6 @@ class PPU {
       this.scanline++;
       if (this.scanline == 262) {
         this.scanline = 0;
-        this.frame++;
       }
     }
   }

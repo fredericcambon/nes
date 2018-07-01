@@ -216,7 +216,7 @@ class CPU {
     } else if (addr < 0x4000) {
       // 7 bytes PPU registers
       // mirrored from 0x2000 to 0x4000
-      return this.ppu.read8(0x2000 + addr % 8);
+      return this.ppu.read8(0x2000 + (addr % 8));
     } else if (addr == 0x4014) {
       return this.ppu.read8(addr);
     } else if (addr == 0x4015) {
@@ -253,14 +253,14 @@ class CPU {
     } else if (addr < 0x4000) {
       // 7 bytes PPU registers
       // mirrored from 0x2000 to 0x4000
-      this.ppu.write8(0x2000 + addr % 8, value);
+      this.ppu.write8(0x2000 + (addr % 8), value);
     } else if (addr == 0x4014) {
       // This might seem a bit odd but this avoids circular reference (ppu using cpu methods)
       addr = value << 8;
       this.ppu.tmpOamAddress = this.ppu.oamAddress;
 
       for (var i = 0; i < 256; i++) {
-        this.ppu.oamData[this.ppu.oamAddress] = this.read8(addr);
+        this.ppu.memory.oam[this.ppu.oamAddress] = this.read8(addr);
         this.ppu.oamAddress++;
         addr++;
       }

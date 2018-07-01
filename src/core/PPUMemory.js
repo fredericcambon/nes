@@ -21,7 +21,7 @@ class NameTable {
   _resolve(mode, addr) {
     addr = addr % 0x1000;
 
-    return this.mirrors[mode][parseInt(addr / 0x400)] * 0x400 + addr % 0x400;
+    return this.mirrors[mode][parseInt(addr / 0x400)] * 0x400 + (addr % 0x400);
   }
 
   read8(mode, addr) {
@@ -81,7 +81,13 @@ class PaletteTable {
 class PPUMemory {
   constructor() {
     this.paletteTable = new PaletteTable();
-    // Unused yet. should be
+
+    // https://wiki.nesdev.com/w/index.php/PPU_OAM
+    // Max 64 sprites
+    // Byte 0 => Y position
+    // Byte 1 => Bank nbr (address in mapper)
+    // Byte 2 => Attributes (priority, hori. vert. switch)
+    // Byte 3 => X position
     this.oam = new Uint8Array(256).fill(0x00);
     this.nameTable = new NameTable();
     this.mapper = null;

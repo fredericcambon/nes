@@ -9,9 +9,9 @@
         "url": "git+https://github.com/fredericcambon/nes.git"
     },
     "scripts": {
-      "build": "webpack",
-      "watch": "webpack -d --watch",
-      "lint": "prettier --write src/**/*.js"
+        "build": "webpack",
+        "watch": "webpack -d --watch",
+        "lint": "prettier --write src/**/*.js"
     },
     "author": "Frédéric Cambon",
     "devDependencies": {

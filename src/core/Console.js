@@ -26,7 +26,11 @@ class Console extends Notifier {
     this.quickSaveData = null;
 
     // CPU, APU, PPU and controller are cross referenced in the code
-    this.cpu.connect(this.apu, this.ppu, this.controller);
+    this.cpu.connect(
+      this.apu,
+      this.ppu,
+      this.controller
+    );
     this.frameReq = null;
 
     // Debug variables
@@ -35,9 +39,20 @@ class Console extends Notifier {
     this.modeKeys = Object.keys(MODES);
   }
 
+  loadROMUrl(path) {
+    return fetchROM(path, true).then(
+      function(res) {
+        this.rom = new ROM(res.data);
+        this.cpu.connectROM(this.rom);
+        this.ppu.connectROM(this.rom);
+        this.reset();
+      }.bind(this)
+    );
+  }
+
   loadROM(path) {
     // TODO: Should directly take in the data, not the path
-    return fetchROM(path).then(
+    return fetchROM(path, false).then(
       function(res) {
         this.rom = new ROM(res.data);
         this.cpu.connectROM(this.rom);
