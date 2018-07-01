@@ -1,5 +1,5 @@
 {
-    "name": "nes.js",
+    "name": "nes-emulator",
     "version": "1.0.0",
     "description": "NES emulator",
     "license": "GPL-3.0",

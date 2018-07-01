@@ -21,7 +21,7 @@ The library uses an observer pattern to signal when frames are ready and other s
 Here's a quick example of how to use this library.
 
 ```
-import { Console } from "nes";
+import { Console } from "nes-emulator";
 
 class NES {
     constructor() {
@@ -30,9 +30,8 @@ class NES {
         // Will notify `this.notify` upon events
         this.console.addObserver( this );
 
-        this.console.loadROM( '/path/to/rom.nes' ).then( function ( res ) {
-            this.console.start()
-        }.bind( this ) );
+        this.console.loadROM( `romData` );
+        this.console.start();
     }
 
     notify(t, e) {
