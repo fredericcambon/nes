@@ -1,3 +1,3 @@
-import Console from './core/Console.js';
+import Console from "./core/Console.js";
 
-export default Console;
+export { Console };
