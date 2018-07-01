@@ -51,7 +51,3 @@ A mapper is extra hardware shipped with the cartridge. It allows dynamic bank sw
 Non-maskable intrerupt is a signal sent by the PPU to the CPU during vblank.
 
 ### 
-
-
-http://www.dustmop.io/blog/2015/04/28/nes-graphics-part-1/
-https://opcode-defined.quora.com/How-NES-Graphics-Work-Sprites-and-Palettes

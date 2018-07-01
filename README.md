@@ -21,6 +21,8 @@ The library uses an observer pattern to signal when frames are ready and other s
 Here's a quick example of how to use this library.
 
 ```
+import { Console } from "nes";
+
 class NES {
     constructor() {
         this.console = new Console();
