@@ -6,7 +6,9 @@ module.exports = {
   output: {
     path: "./lib/",
     library: "NES",
-    filename: "nes.js"
+    filename: "nes.js",
+    libraryExport: "Console",
+    libraryTarget: "umd"
   },
   devtool: "source-map",
 

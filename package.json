@@ -3,7 +3,7 @@
   "version": "1.0.4",
   "description": "NES emulator",
   "license": "GPL-3.0",
-  "main": "src/index.js",
+  "main": "lib/nes.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fredericcambon/nes.git"
