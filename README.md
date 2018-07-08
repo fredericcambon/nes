@@ -6,6 +6,8 @@ This is my implementation of the NES console, which emulates both the original C
 This git repo comes without a frontend as I wanted it to be as bare as possible.
 I started implementing a UI using React.js, you can find the source code [here](https://github.com/fredericcambon/react-nes).
 
+## Examples
+
 ### Sketchfab Viewer API
 
 https://github.com/fredericcambon/sketchfab-viewer-api-nes
