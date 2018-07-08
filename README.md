@@ -72,19 +72,21 @@ class NES {
 * Functional PPU
 * UXROM, NROM, MMC1, MMC3 mappers
 
-## TODO
-
-The emulator is missing key features such as
+## In Progress
 
 * Save/Load
+* Additional mappers
+
+## TODO
+
+The emulator is missing features such as
+
 * Sound
-* Additional mappers ...
 * Tests
 * Make list of playable games
 
 And needs improvement for
 
-* perfs
 * Cycle accurate CPU
 * Some PPU glitches
 
