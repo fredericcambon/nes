@@ -126,10 +126,7 @@ class PPU {
 
     // Buffered data
     this.setRenderingMode(RENDERING_MODES.NORMAL);
-    this.frameBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
-    this.frameBackgroundBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
-    this.frameSpriteBuffer = new Int16Array(256 * 240 * 4).fill(-1);
-    this.frameColorBuffer = new Uint32Array(256 * 240).fill(0x00);
+    this.resetBuffers();
 
     this.frameReady = false;
 
@@ -154,6 +151,13 @@ class PPU {
 
   connectROM(rom) {
     this.memory.mapper = rom.mapper;
+  }
+
+  resetBuffers() {
+    this.frameBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
+    this.frameBackgroundBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
+    this.frameSpriteBuffer = new Int16Array(256 * 240 * 4).fill(-1);
+    this.frameColorBuffer = new Uint32Array(256 * 240).fill(0x00);
   }
 
   /**

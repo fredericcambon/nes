@@ -79,6 +79,7 @@ class Console extends Notifier {
   loadQuickSave(data) {
     if (localStorage.quickSave) {
       this.cpu = mergeDeep(this.cpu, JSON.parse(localStorage.quickSave));
+      this.cpu.ppu.resetBuffers();
       this.notifyObservers("nes-load-quick-save");
     }
   }
