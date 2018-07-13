@@ -76,17 +76,17 @@ class NES {
 * Fully functional CPU
 * Functional PPU
 * UXROM, NROM, MMC1, MMC3 mappers
+* Save/Load
 
 ## In Progress
 
-* Save/Load
 * Additional mappers
+* Sound
 
 ## TODO
 
 The emulator is missing features such as
 
-* Sound
 * Tests
 * Make list of playable games
 
@@ -124,7 +124,7 @@ without which this project would not have been possible.
 
 ```
 NES Emulator
-Copyright (C) 2017 Frédéric Cambon
+Copyright (C) 2018 Frédéric Cambon
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
