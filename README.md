@@ -1,5 +1,6 @@
-# NES
-> A Javascript NES Emulator
+# ONANES (Oh No Another NES Emulator)
+
+_In Javascript !_
 
 This is my implementation of the NES console, which emulates both the original CPU and PPU.
 
@@ -17,7 +18,7 @@ It uses Sketchfab and its viewer API.
 
 ### Demo with React
 
-http://grun7.com:8080/
+https://n3s.herokuapp.com/ 
 
 ## Installing
 
