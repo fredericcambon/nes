@@ -1,3 +1,6 @@
+// https://nesdoug.com/2015/12/02/14-intro-to-sound/
+// https://wiki.nesdev.com/w/index.php/APU_Frame_Counter
+
 /**
  * Is there anybody out there
  */

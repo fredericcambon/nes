@@ -156,7 +156,7 @@ class PPU {
   resetBuffers() {
     this.frameBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
     this.frameBackgroundBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
-    this.frameSpriteBuffer = new Int16Array(256 * 240 * 4).fill(-1);
+    this.frameSpriteBuffer = new Uint8Array(256 * 240 * 4).fill(0x00);
     this.frameColorBuffer = new Uint32Array(256 * 240).fill(0x00);
   }
 
@@ -578,7 +578,7 @@ class PPU {
     }
 
     this.frameBackgroundBuffer.fill(0x00);
-    this.frameSpriteBuffer.fill(-1);
+    this.frameSpriteBuffer.fill(0x00);
   }
 
   /**

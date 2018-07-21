@@ -7,13 +7,14 @@ import { MODES, OPCODES, INTERRUPTS } from "./constants.js";
 
 import { mergeDeep } from "../utils/Merge";
 import Notifier from "../utils/Notifier";
+import Throttle from "../utils/Throttle";
 
 /**
  * Main class for the emulator, controls the hardware emulation.
  * Fires up events.
  */
 class Console extends Notifier {
-  constructor() {
+  constructor(fps = 60) {
     super();
     this.cpu = new CPU();
     this.ppu = new PPU();
@@ -31,6 +32,10 @@ class Console extends Notifier {
       this.controller
     );
     this.frameReq = null;
+
+    // Output & CPU throttling
+    this.frameThrottling = new Throttle(fps);
+    this.nesThrottling = new Throttle(60);
 
     // Debug variables
     this.frameNbr = 0;
@@ -132,7 +137,6 @@ class Console extends Notifier {
       if (this.ppu.frameReady) {
         this.notifyObservers("frame-ready", this.ppu.frameBuffer);
         this.notifyObservers("frame-ready-debug");
-
         this.ppu.acknowledgeFrame();
         this.frameNbr++;
         return false;
@@ -144,9 +148,12 @@ class Console extends Notifier {
 
   tick() {
     this.cycles = this.cpu.tick();
-    this.cycles = this.cycles * 3;
 
-    for (; this.cycles > 0; this.cycles--) {
+    for (let c = this.cycles; c > 0; c--) {
+      this.apu.tick();
+    }
+
+    for (let c = this.cycles * 3; c > 0; c--) {
       this.interrupt = this.ppu.tick();
 
       if (this.interrupt !== null) {
@@ -158,12 +165,16 @@ class Console extends Notifier {
       }
 
       if (this.ppu.frameReady) {
-        this.notifyObservers("frame-ready", [
-          this.ppu.frameBuffer,
-          this.ppu.frameBackgroundBuffer,
-          this.ppu.frameSpriteBuffer,
-          this.ppu.frameColorBuffer
-        ]);
+        if (!this.frameThrottling.isThrottled()) {
+          this.notifyObservers("frame-ready", [
+            this.ppu.frameBuffer,
+            this.ppu.frameBackgroundBuffer,
+            this.ppu.frameSpriteBuffer,
+            this.ppu.frameColorBuffer
+          ]);
+        } else {
+          console.debug("Frame throttled");
+        }
         this.ppu.acknowledgeFrame();
         return false;
       }
@@ -173,10 +184,14 @@ class Console extends Notifier {
   }
 
   frame() {
-    while (true) {
-      if (!this._tick()) {
-        break;
+    if (!this.nesThrottling.isThrottled()) {
+      while (true) {
+        if (!this._tick()) {
+          break;
+        }
       }
+    } else {
+      console.debug("NES throttled");
     }
     this.frameReq = requestAnimationFrame(this.frame.bind(this));
   }
