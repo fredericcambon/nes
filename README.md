@@ -22,7 +22,7 @@ It uses Sketchfab and its viewer API.
 
 ![Example 2](https://i.imgur.com/zm9bjGNl.png)
 
-https://n3s.herokuapp.com/ 
+https://onanes.herokuapp.com/ 
 
 ## Installing
 
