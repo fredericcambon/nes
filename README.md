@@ -1,4 +1,4 @@
-# ONANES (Oh No Another NES Emulator)
+# OnaNES (Oh No Another NES Emulator)
 
 _In Javascript !_
 
@@ -7,32 +7,17 @@ This is my implementation of the NES console, which emulates both the original C
 This git repo comes without a frontend as I wanted it to be as bare as possible.
 I started implementing a UI using React.js, you can find the source code [here](https://github.com/fredericcambon/react-nes).
 
-## Examples
+## Getting Started
 
-### Sketchfab Viewer API
+### Installing
 
-![Example1](https://i.imgur.com/Znq5kHSl.png)
-
-https://github.com/fredericcambon/sketchfab-viewer-api-nes
-
-This was made only for fun, to show it is possible to make this emulator run and displayed on a 3D model.
-It uses Sketchfab and its viewer API.
-
-### Demo with React
-
-![Example 2](https://i.imgur.com/zm9bjGNl.png)
-
-https://onanes.herokuapp.com/ 
-
-## Installing
-
-### From NPM
+#### NPM
 
 ```shell
 npm install nes-emulator
 ```
 
-### Locally
+#### Local
 
 Clone the repo and
 
@@ -41,10 +26,11 @@ npm install
 npm run build
 ```
 
-## Quick Start
+### How to Use
 
-The library uses an observer pattern to signal when frames are ready and other stuff.
-Here's a quick example of how to use this library.
+The library uses an observer pattern to signal events (frames ready, reset, pause ...).
+
+Here's an example of how to use this library.
 
 ```
 import { Console } from "nes-emulator";
@@ -56,6 +42,7 @@ class NES {
         // Will notify `this.notify` upon events
         this.console.addObserver( this );
 
+        // Here romData is the content of a .nes ROM
         this.console.loadROM( `romData` );
         this.console.start();
     }
@@ -71,19 +58,37 @@ class NES {
 }
 ```
 
+## Examples
+
+### Sketchfab Viewer API (http://grun7.com/sketchfab-viewer-api-nes/)
+
+![Example1](https://i.imgur.com/Znq5kHSl.png)
+
+
+This was made only for fun, to show it is possible to make this emulator run and displayed on a 3D model.
+It uses Sketchfab and its viewer API.
+
+### Demo with React (https://onanes.herokuapp.com/)
+
+![Example 2](https://i.imgur.com/zm9bjGNl.png)
+
+UI using ReactJS
+
 ## Features
+
+### Done
 
 * Fully functional CPU
 * Functional PPU
 * UXROM, NROM, MMC1, MMC3 mappers
 * Save/Load
 
-## In Progress
+### In Progress
 
 * Additional mappers
 * Sound
 
-## TODO
+### TODO
 
 The emulator is missing features such as
 
@@ -95,7 +100,7 @@ And needs improvement for
 * Cycle accurate CPU
 * Some PPU glitches
 
-## Documentation
+## API Documentation
 
 TODO WIP
 
@@ -115,7 +120,7 @@ Fired when a game is loaded and the console restarts.
 I'm still actively working on it but would welcome your PRs. Do not hesitate to fork
 the repository and h4ck around.
 
-## Thanks
+## Acknowledgments
 
 Special thanks for the amazing http://nesdev.com/ and all their technical resources
 without which this project would not have been possible.
