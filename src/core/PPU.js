@@ -371,7 +371,7 @@ class PPU {
         this.registerRead = this.registerRead | (this.fSpriteZeroHit << 6);
         if (this.nmiOccurred) {
           // Avoid reading the NMI right after it is set
-          if (this.cycles !== 2 || this.scanline !== 241) {
+          if (this.cycle !== 2 || this.scanline !== 241) {
             this.registerRead = this.registerRead | (1 << 7);
           }
         }
