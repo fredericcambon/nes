@@ -15,7 +15,7 @@ class CPUMemory {
       stack: this.stack,
       ram: this.ram
     };
-  }*/
+  } */
 
   read8(addr) {
     // 2k bits RAM

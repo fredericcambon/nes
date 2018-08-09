@@ -1,8 +1,6 @@
-import _ from "lodash";
-
 import CPUMemory from "../core/CPUMemory";
 
-import { INTERRUPTS, OPCODES } from "./constants.js";
+import { INTERRUPTS } from "./constants.js";
 
 import { instructions } from "./instructions.js";
 
@@ -99,8 +97,8 @@ class CPU {
 
   connectROM(rom) {
     // Improve that
-    //this.mapper = rom.mapper;
-    //this.mapper.cpu = this;
+    // this.mapper = rom.mapper;
+    // this.mapper.cpu = this;
   }
 
   stall() {
@@ -155,8 +153,6 @@ class CPU {
             this.i = 1;
             this.cycles += 7;
           }
-        }
-        default: {
           break;
         }
       }
@@ -169,7 +165,7 @@ class CPU {
     try {
       this.instrCode = this.read8(this.pc);
     } catch (err) {
-      throw "Could not read next instruction: " + err;
+      throw new Error("Could not read next instruction: " + err);
     }
 
     [
@@ -217,13 +213,13 @@ class CPU {
       // 7 bytes PPU registers
       // mirrored from 0x2000 to 0x4000
       return this.ppu.read8(0x2000 + (addr % 8));
-    } else if (addr == 0x4014) {
+    } else if (addr === 0x4014) {
       return this.ppu.read8(addr);
-    } else if (addr == 0x4015) {
+    } else if (addr === 0x4015) {
       return this.apu.read8();
-    } else if (addr == 0x4016) {
+    } else if (addr === 0x4016) {
       return this.controller.read8();
-    } else if (addr == 0x4017) {
+    } else if (addr === 0x4017) {
       return 0;
     } else if (addr < 0x6000) {
       console.log("I/O REGISTERS");
@@ -254,7 +250,7 @@ class CPU {
       // 7 bytes PPU registers
       // mirrored from 0x2000 to 0x4000
       this.ppu.write8(0x2000 + (addr % 8), value);
-    } else if (addr == 0x4014) {
+    } else if (addr === 0x4014) {
       // This might seem a bit odd but this avoids circular reference (ppu using cpu methods)
       addr = value << 8;
       this.ppu.tmpOamAddress = this.ppu.oamAddress;
@@ -267,11 +263,11 @@ class CPU {
 
       this.ppu.oamAddress = this.ppu.tmpOamAddress;
       this.stall();
-    } else if (addr == 0x4015) {
+    } else if (addr === 0x4015) {
       this.apu.write8(addr, value);
-    } else if (addr == 0x4016) {
+    } else if (addr === 0x4016) {
       this.controller.write8(value);
-    } else if (addr == 0x4017) {
+    } else if (addr === 0x4017) {
       // TODO sound
     } else if (addr >= 0x6000) {
       // Write to mapper (handled by PPU)

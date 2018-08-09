@@ -1,4 +1,4 @@
-import { MODES, OPCODES } from "./constants.js";
+import { MODES } from "./constants.js";
 
 import { isPageCrossed } from "./utils.js";
 

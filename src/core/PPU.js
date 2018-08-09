@@ -202,7 +202,7 @@ class PPU {
 
       i++;
 
-      if (i % 8 == 0) {
+      if (i % 8 === 0) {
         i += 8;
         s++;
       }
@@ -285,7 +285,7 @@ class PPU {
 
         address++;
 
-        if (this.fSpriteSize !== 0 && tileY == 7) {
+        if (this.fSpriteSize !== 0 && tileY === 7) {
           tile++;
           address = 0x1000 * table + tile * 16;
         }
@@ -736,8 +736,8 @@ class PPU {
     // Sub function of fetchAndStoreSprites
     var tile = this.memory.oam[i * 4 + 1];
     var attributes = this.memory.oam[i * 4 + 2];
-    var address,
-      table = 0;
+    var address;
+    var table = 0;
     var isReversedVertically = (attributes & 0x80) === 0x80;
     var isReversedHorizontally = (attributes & 0x40) === 0x40;
     var attributeTableByte = (attributes & 3) << 2;
@@ -818,10 +818,10 @@ class PPU {
    * - Read CHR/Pattern table low+high bytes
    */
   fetchAndStoreBackgroundRow() {
-    var address,
-      shift,
-      fineY,
-      nameTableByte = 0;
+    var address;
+    var shift;
+    var fineY;
+    var nameTableByte = 0;
 
     // Fetch Name Table Byte
     address = 0x2000 | (this.v & 0x0fff);
@@ -880,7 +880,7 @@ class PPU {
       return CYCLES.COPY_X;
     } else if (this.cycle > 279 && this.cycle < 305) {
       return CYCLES.COPY_Y;
-    } else if (this.cycle == 340) {
+    } else if (this.cycle === 340) {
       return CYCLES.MAPPER_TICK;
     } else {
       return CYCLES.IDLE;
@@ -929,7 +929,7 @@ class PPU {
 
     this.updateScrollingY();
 
-    if (this.cycleType == CYCLES.ONE) {
+    if (this.cycleType === CYCLES.ONE) {
       this.clearVerticalBlank();
     }
 
@@ -1010,10 +1010,10 @@ class PPU {
       this.f = this.f ^ 1;
     }
 
-    if (this.cycle == 341) {
+    if (this.cycle === 341) {
       this.cycle = 0;
       this.scanline++;
-      if (this.scanline == 262) {
+      if (this.scanline === 262) {
         this.scanline = 0;
       }
     }

@@ -111,7 +111,7 @@ class Controller {
 
   write8(value) {
     this.strobe = value;
-    if (this.strobe & (1 == 1)) {
+    if ((this.strobe & 1) === 1) {
       this.i = 0;
     }
   }

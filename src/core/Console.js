@@ -54,7 +54,7 @@ class Console extends Notifier {
       return this.rom.toJSON();
     }
 
-    throw "No active ROM found";
+    throw new Error("No active ROM found");
   }
 
   reset() {

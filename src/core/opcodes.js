@@ -135,7 +135,7 @@ export var opcodes = {
 
   // Branch if Overflow clear
   [OPCODES.BVC]: (addr, cpu) => {
-    if (cpu.v == 0) {
+    if (cpu.v === 0) {
       cpu.cycles += isPageCrossed(cpu.pc, addr) ? 2 : 1;
       cpu.pc = addr & 0xffff;
     }
@@ -143,7 +143,7 @@ export var opcodes = {
 
   // Branch if Overflow set
   [OPCODES.BVS]: (addr, cpu) => {
-    if (cpu.v == 1) {
+    if (cpu.v === 1) {
       cpu.cycles += isPageCrossed(cpu.pc, addr) ? 2 : 1;
       cpu.pc = addr & 0xffff;
     }
@@ -151,7 +151,7 @@ export var opcodes = {
 
   // Branch if Equal
   [OPCODES.BEQ]: (addr, cpu) => {
-    if (cpu.z == 1) {
+    if (cpu.z === 1) {
       cpu.cycles += isPageCrossed(cpu.pc, addr) ? 2 : 1;
       cpu.pc = addr & 0xffff;
     }
@@ -159,7 +159,7 @@ export var opcodes = {
 
   // Branch if Carry Set
   [OPCODES.BCS]: (addr, cpu) => {
-    if (cpu.c == 1) {
+    if (cpu.c === 1) {
       cpu.cycles += isPageCrossed(cpu.pc, addr) ? 2 : 1;
       cpu.pc = addr & 0xffff;
     }
@@ -167,7 +167,7 @@ export var opcodes = {
 
   // Branch if Not Equal
   [OPCODES.BNE]: (addr, cpu) => {
-    if (cpu.z == 0) {
+    if (cpu.z === 0) {
       cpu.cycles += isPageCrossed(cpu.pc, addr) ? 2 : 1;
       cpu.pc = addr & 0xffff;
     }
@@ -175,7 +175,7 @@ export var opcodes = {
 
   // Branch if Carry Clear
   [OPCODES.BCC]: (addr, cpu) => {
-    if (cpu.c == 0) {
+    if (cpu.c === 0) {
       cpu.cycles += isPageCrossed(cpu.pc, addr) ? 2 : 1;
       cpu.pc = addr & 0xffff;
     }
@@ -183,7 +183,7 @@ export var opcodes = {
 
   // Branch if Positive
   [OPCODES.BPL]: (addr, cpu) => {
-    if (cpu.n == 0) {
+    if (cpu.n === 0) {
       cpu.cycles += isPageCrossed(cpu.pc, addr) ? 2 : 1;
       cpu.pc = addr & 0xffff;
     }
@@ -191,7 +191,7 @@ export var opcodes = {
 
   // Branch if Minus
   [OPCODES.BMI]: (addr, cpu) => {
-    if (cpu.n == 1) {
+    if (cpu.n === 1) {
       cpu.cycles += isPageCrossed(cpu.pc, addr) ? 2 : 1;
       cpu.pc = addr & 0xffff;
     }
@@ -359,7 +359,7 @@ export var opcodes = {
       cpu.c = 0;
     }
 
-    if (((a ^ b) & 0x80) != 0 && ((a ^ cpu.a) & 0x80) != 0) {
+    if (((a ^ b) & 0x80) !== 0 && ((a ^ cpu.a) & 0x80) !== 0) {
       cpu.v = 1;
     } else {
       cpu.v = 0;
