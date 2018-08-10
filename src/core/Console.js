@@ -14,7 +14,7 @@ import Throttle from "../utils/Throttle";
  * Fires up events.
  */
 class Console extends Notifier {
-  constructor(fps = 60) {
+  constructor(fps = null) {
     super();
     this.cpu = new CPU();
     this.ppu = new PPU();
@@ -34,7 +34,7 @@ class Console extends Notifier {
     this.frameReq = null;
 
     // Output & CPU throttling
-    this.frameThrottling = new Throttle(fps);
+    this.frameThrottling = fps ? new Throttle(fps) : null;
     this.nesThrottling = new Throttle(60);
 
     // Debug variables
@@ -172,8 +172,6 @@ class Console extends Notifier {
             this.ppu.frameSpriteBuffer,
             this.ppu.frameColorBuffer
           ]);
-        } else {
-          console.debug("Frame throttled");
         }
         this.ppu.acknowledgeFrame();
         return false;
@@ -184,14 +182,12 @@ class Console extends Notifier {
   }
 
   frame() {
-    if (!this.nesThrottling.isThrottled()) {
+    if (this.nesThrottling === null || !this.nesThrottling.isThrottled()) {
       while (true) {
         if (!this._tick()) {
           break;
         }
       }
-    } else {
-      console.debug("NES throttled");
     }
     this.frameReq = requestAnimationFrame(this.frame.bind(this));
   }
