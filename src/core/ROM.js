@@ -63,7 +63,7 @@ class ROM {
         break;
       }
       default: {
-        throw "Invalid mapper: " + this.mapperType;
+        throw new Error("Invalid mapper: " + this.mapperType);
       }
     }
   }
@@ -78,7 +78,7 @@ class ROM {
       region: this.region,
       mapper: this.mapper.toJSON()
     };
-  }*/
+  } */
 }
 
 export default ROM;

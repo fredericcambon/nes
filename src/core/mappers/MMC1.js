@@ -1,6 +1,6 @@
 import Mapper from "./Mapper";
 
-import { BANK_SIZES, NAMETABLE_MIRRORS } from "./constants";
+import { NAMETABLE_MIRRORS } from "./constants";
 
 const MMC1_MIRRORS = {
   0: NAMETABLE_MIRRORS.SINGLE_SCREEN_0,
@@ -44,7 +44,7 @@ class MMC1 extends Mapper {
     } else if (addr < 0x8000) {
       this.sram[addr - 0x6000] = value;
     } else {
-      if ((value & 0x80) != 0) {
+      if ((value & 0x80) !== 0) {
         this.buffer = 0x10;
         this.bufferIndex = 0;
         this.control(this.conf | 0x0c);
@@ -53,34 +53,28 @@ class MMC1 extends Mapper {
         this.buffer = (this.buffer >> 1) | ((value & 1) << 4);
         this.bufferIndex++;
 
-        if (this.bufferIndex == 5) {
+        if (this.bufferIndex === 5) {
           value = this.buffer;
 
           // Control
           if (addr < 0xa000) {
             this.control(value);
-          }
-
-          // CHR Bank 0
-          else if (addr < 0xc000) {
+          } else if (addr < 0xc000) {
+            // CHR Bank 0
             if (!this.chr.fixed) {
               this.chr.switchBank(0, 0x1000, value);
             } else {
               value = parseInt(value >> 1);
               this.chr.switchBank(0, 0x2000, value);
             }
-          }
-
-          // CHR Bank 1
-          else if (addr < 0xe000) {
+          } else if (addr < 0xe000) {
+            // CHR Bank 1
             if (!this.chr.fixed) {
-              //this.chr.updateUpperBank(value);
+              // this.chr.updateUpperBank(value);
               this.chr.switchBank(0x1000, 0x2000, value);
             }
-          }
-
-          // PRG Bank
-          else {
+          } else {
+            // PRG Bank
             if (this.prg.fixed) {
               value = parseInt(value >> 1);
               this.prg.switchBank(0, 0x8000, value);

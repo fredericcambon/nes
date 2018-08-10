@@ -1,0 +1,12 @@
+{
+  "extends": "standard",
+  "plugins": ["prettier", "babel"],
+  "env": {
+    "browser": true
+  },
+  "rules": {
+    "quotes": ["error", "double"],
+    "semi": 0,
+    "space-before-function-paren": 0
+  }
+}

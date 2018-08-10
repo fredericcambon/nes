@@ -29,7 +29,7 @@ class MMC3 extends Mapper {
    *  using `irqLatch` which is set in `control()`
    */
   tick() {
-    if (this.irqCounter == 0) {
+    if (this.irqCounter === 0) {
       this.irqCounter = this.irqLatch;
     } else {
       this.irqCounter--;
@@ -66,13 +66,13 @@ class MMC3 extends Mapper {
    *  banks using one of two different modes.
    */
   control(addr, value) {
-    var is_even = addr % 2 === 0;
+    var isEven = addr % 2 === 0;
 
-    if (addr < 0x9fff && is_even) {
+    if (addr < 0x9fff && isEven) {
       this.prgBankMode = (value >> 6) & 1;
       this.chrBankMode = (value >> 7) & 1;
       this.bankRegister = value & 7;
-    } else if (addr < 0xa000 && !is_even) {
+    } else if (addr < 0xa000 && !isEven) {
       switch (this.bankRegister) {
         // Select 2 KB CHR bank at PPU $0000-$07FF (or $1000-$17FF);
         case 0: {
@@ -156,20 +156,20 @@ class MMC3 extends Mapper {
           break;
         }
       }
-    } else if (addr < 0xbfff && is_even) {
+    } else if (addr < 0xbfff && isEven) {
       this.mirrorType = MMC3_MIRRORS[value & 1];
-    } else if (addr < 0xc000 && !is_even) {
+    } else if (addr < 0xc000 && !isEven) {
       // Write Protect, not implemented
-    } else if (addr < 0xdfff && is_even) {
+    } else if (addr < 0xdfff && isEven) {
       this.irqLatch = value;
-    } else if (addr < 0xe000 && !is_even) {
+    } else if (addr < 0xe000 && !isEven) {
       this.irqCounter = 0;
-    } else if (addr < 0xffff && is_even) {
+    } else if (addr < 0xffff && isEven) {
       this.irqEnable = false;
-    } else if (addr < 0x10000 && !is_even) {
+    } else if (addr < 0x10000 && !isEven) {
       this.irqEnable = true;
     } else {
-      throw "Unknown control: " + addr;
+      throw new Error("Unknown control: " + addr);
     }
   }
 }
