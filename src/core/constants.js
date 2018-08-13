@@ -91,6 +91,17 @@ export var INTERRUPTS = {
   IRQ: 1
 };
 
+export var KEYBOARD_KEYS = {
+  A: 88,
+  B: 67,
+  SELECT: 16,
+  START: 13,
+  UP: 38,
+  DOWN: 40,
+  LEFT: 37,
+  RIGHT: 39
+}
+
 export var BUTTONS = {
   A: 0,
   B: 1,
