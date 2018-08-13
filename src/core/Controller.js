@@ -1,4 +1,4 @@
-import { BUTTONS } from "./constants.js";
+import { KEYBOARD_KEYS, BUTTONS } from "./constants.js";
 
 /**
  * The 8 controller buttons are mapped on 8bits
@@ -15,98 +15,53 @@ class Controller {
     document.addEventListener("keyup", this.keyUp.bind(this));
   }
 
-  keyDown(event) {
+  _checkInput(event, value) {
     switch (event.keyCode) {
-      // Enter
-      case 13: {
-        this.buttons[BUTTONS.START] = 1;
+      case KEYBOARD_KEYS.START: {
+        this.buttons[BUTTONS.START] = value;
         break;
       }
-      // Select / Shift
-      case 16: {
-        this.buttons[BUTTONS.SELECT] = 1;
+      case KEYBOARD_KEYS.SELECT: {
+        this.buttons[BUTTONS.SELECT] = value;
         break;
       }
-      // A
-      case 88: {
-        this.buttons[BUTTONS.A] = 1;
+      case KEYBOARD_KEYS.A: {
+        this.buttons[BUTTONS.A] = value;
         break;
       }
-      // B
-      case 67: {
-        this.buttons[BUTTONS.B] = 1;
+      case KEYBOARD_KEYS.B: {
+        this.buttons[BUTTONS.B] = value;
         break;
       }
-      // Left
-      case 37: {
-        this.buttons[BUTTONS.LEFT] = 1;
+      case KEYBOARD_KEYS.LEFT: {
+        this.buttons[BUTTONS.LEFT] = value;
         event.preventDefault();
         break;
       }
-      // Up
-      case 38: {
-        this.buttons[BUTTONS.UP] = 1;
+      case KEYBOARD_KEYS.UP: {
+        this.buttons[BUTTONS.UP] = value;
         event.preventDefault();
         break;
       }
-      // Right
-      case 39: {
-        this.buttons[BUTTONS.RIGHT] = 1;
+      case KEYBOARD_KEYS.RIGHT: {
+        this.buttons[BUTTONS.RIGHT] = value;
         event.preventDefault();
         break;
       }
-      // Down
-      case 40: {
-        this.buttons[BUTTONS.DOWN] = 1;
+      case KEYBOARD_KEYS.DOWN: {
+        this.buttons[BUTTONS.DOWN] = value;
         event.preventDefault();
         break;
       }
     }
   }
 
+  keyDown(event) {
+    this._checkInput(event, 1);
+  }
+
   keyUp(event) {
-    switch (event.keyCode) {
-      // Enter
-      case 13: {
-        this.buttons[BUTTONS.START] = 0;
-        break;
-      }
-      // Select / Shift
-      case 16: {
-        this.buttons[BUTTONS.SELECT] = 0;
-        break;
-      }
-      // A
-      case 88: {
-        this.buttons[BUTTONS.A] = 0;
-        break;
-      }
-      // B
-      case 67: {
-        this.buttons[BUTTONS.B] = 0;
-        break;
-      }
-      // Left
-      case 37: {
-        this.buttons[BUTTONS.LEFT] = 0;
-        break;
-      }
-      // Up
-      case 38: {
-        this.buttons[BUTTONS.UP] = 0;
-        break;
-      }
-      // Right
-      case 39: {
-        this.buttons[BUTTONS.RIGHT] = 0;
-        break;
-      }
-      // Down
-      case 40: {
-        this.buttons[BUTTONS.DOWN] = 0;
-        break;
-      }
-    }
+    this._checkInput(event, 0);
   }
 
   write8(value) {
