@@ -67,18 +67,6 @@ class ROM {
       }
     }
   }
-
-  /*
-  toJSON() {
-    return {
-      nbrPRGBanks: this.nbrPRGBanks,
-      nbrCHRBanks: this.nbrCHRBanks,
-      mapperType: this.mapperType,
-      mirrorType: this.mirrorType,
-      region: this.region,
-      mapper: this.mapper.toJSON()
-    };
-  } */
 }
 
 export default ROM;

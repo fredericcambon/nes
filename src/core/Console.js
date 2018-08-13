@@ -49,14 +49,6 @@ class Console extends Notifier {
     this.reset();
   }
 
-  getRomInfo() {
-    if (this.rom !== null) {
-      return this.rom.toJSON();
-    }
-
-    throw new Error("No active ROM found");
-  }
-
   reset() {
     this.cpu.reset();
     this.ppu.reset();
