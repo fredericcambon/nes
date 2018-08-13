@@ -92,15 +92,15 @@ export var INTERRUPTS = {
 };
 
 export var KEYBOARD_KEYS = {
-  A: 88,
-  B: 67,
+  A: 67,
+  B: 88,
   SELECT: 16,
   START: 13,
   UP: 38,
   DOWN: 40,
   LEFT: 37,
   RIGHT: 39
-}
+};
 
 export var BUTTONS = {
   A: 0,
