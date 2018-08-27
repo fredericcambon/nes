@@ -17,8 +17,9 @@ class MMC3 extends Mapper {
     this.irqEnable = true;
 
     // PRG banks of MMC3 requires special bank switching at init
-    this.prg.switchBank(0x4000, 0x6000, this.prg.bankNbr / 8 - 2);
-    this.prg.switchBank(0x6000, 0x8000, this.prg.bankNbr / 8 - 1);
+    this.prg.setBankSize(8);
+    this.prg.switchBank(0x4000, 0x6000, -2);
+    this.prg.switchBank(0x6000, 0x8000, -1);
     this.prg.switchBank(0x0000, 0x2000, 0);
     this.prg.switchBank(0x2000, 0x4000, 1);
   }
@@ -135,10 +136,10 @@ class MMC3 extends Mapper {
         // Select 8 KB PRG ROM bank at $8000-$9FFF (or $C000-$DFFF);
         case 6: {
           if (this.prgBankMode === 0) {
-            this.prg.switchBank(0x4000, 0x6000, this.prg.bankNbr / 8 - 2);
+            this.prg.switchBank(0x4000, 0x6000, -2);
             this.prg.switchBank(0x0000, 0x2000, value);
           } else {
-            this.prg.switchBank(0x0000, 0x2000, this.prg.bankNbr / 8 - 2);
+            this.prg.switchBank(0x0000, 0x2000, -2);
             this.prg.switchBank(0x4000, 0x6000, value);
           }
 
@@ -149,9 +150,9 @@ class MMC3 extends Mapper {
           this.prg.switchBank(0x2000, 0x4000, value);
 
           if (this.prgBankMode === 0) {
-            this.prg.switchBank(0x4000, 0x6000, this.prg.bankNbr / 8 - 2);
+            this.prg.switchBank(0x4000, 0x6000, -2);
           } else {
-            this.prg.switchBank(0x0000, 0x2000, this.prg.bankNbr / 8 - 2);
+            this.prg.switchBank(0x0000, 0x2000, -2);
           }
           break;
         }

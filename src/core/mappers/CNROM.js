@@ -7,7 +7,7 @@ class CNROM extends Mapper {
   constructor(rom) {
     super(rom);
 
-    this.prg.switchBank(0x4000, 0x8000, this.prg.bankNbr / 16 - 1);
+    this.prg.switchBank(0x4000, 0x8000, -1);
   }
 
   read8(addr) {
