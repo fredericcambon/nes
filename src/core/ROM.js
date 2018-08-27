@@ -2,6 +2,7 @@ import NROM from "./mappers/NROM";
 import MMC1 from "./mappers/MMC1";
 import MMC3 from "./mappers/MMC3";
 import UXROM from "./mappers/UXROM";
+import CNROM from "./mappers/CNROM";
 
 const HEADER_SIZE = 16;
 const PRG_BANK_SIZE = 16384;
@@ -56,6 +57,10 @@ class ROM {
       }
       case 2: {
         this.mapper = new UXROM(this);
+        break;
+      }
+      case 3: {
+        this.mapper = new CNROM(this);
         break;
       }
       case 4: {
