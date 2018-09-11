@@ -1,11 +1,13 @@
 class BankMemory {
-  constructor(data, windowSize, fixed) {
+  constructor(data, windowSize, bankSize) {
     this.data = data;
-    this.fixed = fixed;
     this.swapMode = 0;
     this.windowSize = windowSize;
+    // bankNbr is the number of 1kb banks we have in all our data
     this.bankNbr = parseInt(this.data.length / 0x0400);
     this.pointers = new Array(parseInt(windowSize / 0x0400)).fill(0);
+    // PRG is 32 by default, CHR is 8, but can be changed
+    this.bankSize = bankSize;
     // Tmp variables
     this.p = 0;
     this.o = 0;
@@ -17,14 +19,26 @@ class BankMemory {
     }
   }
 
+  setBankSize(size) {
+    this.bankSize = size;
+  }
+
+  /**
+    Move pointers to redirect to new banks
+  */
   switchBank(_from, _to, value) {
     this.p1 = parseInt(_from / 0x0400);
     this.p2 = parseInt(_to / 0x0400);
-    // Explain
+
+    if (value < 0) {
+      // Used to select latest bank, penultimate bank
+      value = this.bankNbr / this.bankSize + value;
+    }
+
     value = value * (this.p2 - this.p1);
 
-    for (let i = this.p1; i < this.p2; i++) {
-      this.pointers[i] = value + (i - this.p1);
+    for (let x = 0, i = this.p1; i < this.p2; i++, x++) {
+      this.pointers[i] = value + x;
     }
   }
 

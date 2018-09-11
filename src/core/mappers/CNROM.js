@@ -1,10 +1,9 @@
 import Mapper from "./Mapper";
 
 /**
- *   http://wiki.nesdev.com/w/index.php/NROM
+ *   https://wiki.nesdev.com/w/index.php/INES_Mapper_003
  */
-
-class NROM extends Mapper {
+class CNROM extends Mapper {
   constructor(rom) {
     super(rom);
 
@@ -27,9 +26,9 @@ class NROM extends Mapper {
     } else if (addr < 0x8000) {
       this.sram[addr - 0x6000] = value;
     } else {
-      console.warn("Invalid write addr", addr);
+      this.chr.switchBank(0, 0x2000, value & 0xf);
     }
   }
 }
 
-export default NROM;
+export default CNROM;

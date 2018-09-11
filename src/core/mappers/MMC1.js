@@ -21,7 +21,7 @@ class MMC1 extends Mapper {
     this.prgBankMode = 0;
     this.chrBankMode = 0;
 
-    this.prg.switchBank(0x4000, 0x8000, this.prg.bankNbr / 16 - 1);
+    this.prg.switchBank(0x4000, 0x8000, -1);
   }
 
   read8(addr) {
@@ -84,7 +84,7 @@ class MMC1 extends Mapper {
                 this.prg.switchBank(0x4000, 0x8000, value);
               } else {
                 this.prg.switchBank(0, 0x4000, value);
-                this.prg.switchBank(0x4000, 0x8000, this.prg.bankNbr / 16 - 1);
+                this.prg.switchBank(0x4000, 0x8000, -1);
               }
             }
           }
