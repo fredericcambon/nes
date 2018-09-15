@@ -1,6 +1,6 @@
 {
   "name": "nes-emulator",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "NES emulator",
   "license": "GPL-3.0",
   "main": "lib/nes.js",
