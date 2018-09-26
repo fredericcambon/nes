@@ -1,6 +1,6 @@
 import CPUMemory from "../core/CPUMemory";
 
-import { INTERRUPTS } from "./constants.js";
+import { INTERRUPTS, OPCODES } from "./constants.js";
 
 import { instructions } from "./instructions.js";
 
@@ -56,6 +56,7 @@ class CPU {
     this.tmpCycles = 0;
     this.instrCycles = 0;
     this.instrCode = 0;
+    this.lastInstrCode = 0;
     this.instrOpCode = 0;
     this.instrMode = 0;
     this.instrSize = 0;
@@ -143,6 +144,15 @@ class CPU {
       throw new Error("Could not read next instruction: " + err);
     }
 
+    // 0xFF is not implemented as an instruction,
+    // if RTI is called mutliple times
+    if (
+      this.instrCode === 0xff ||
+      (this.instrCode === 64 && this.instrCode === this.lastInstrCode)
+    ) {
+      return -1;
+    }
+
     [
       this.instrOpCode,
       this.instrMode,
@@ -156,6 +166,9 @@ class CPU {
     this.cycles += this.instrCycles;
 
     this._opcodes[this.instrOpCode](this.addr, this);
+
+    // Save the last executed instrCode to prevent infinite loop of RTI (when testing)
+    this.lastInstrCode = this.instrCode;
 
     return this.cycles - this.tmpCycles;
   }

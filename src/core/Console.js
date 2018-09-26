@@ -86,6 +86,28 @@ class Console extends Notifier {
     this.frameReq = requestAnimationFrame(this.frame.bind(this));
   }
 
+  /**
+   * Sync mode used in tests
+   */
+  startSync() {
+    let res = 0;
+
+    while (true) {
+      if (this.nesThrottling === null || !this.nesThrottling.isThrottled()) {
+        while (true) {
+          res = this.tick();
+
+          if (res === 1) {
+            break;
+          } else if (res === -1) {
+            this.stop();
+            return;
+          }
+        }
+      }
+    }
+  }
+
   startDebug() {
     this._tick = this.tickDebug;
     this.frameReq = requestAnimationFrame(this.frame.bind(this));
@@ -141,6 +163,11 @@ class Console extends Notifier {
   tick() {
     this.cycles = this.cpu.tick();
 
+    if (this.cycles === -1) {
+      // CPU did nothing, this is our way of knowing the program should exit
+      return -1;
+    }
+
     for (let c = this.cycles; c > 0; c--) {
       this.apu.tick();
     }
@@ -166,21 +193,29 @@ class Console extends Notifier {
           ]);
         }
         this.ppu.acknowledgeFrame();
-        return false;
+        return 1;
       }
     }
 
-    return true;
+    return 0;
   }
 
   frame() {
+    let res = 0;
+
     if (this.nesThrottling === null || !this.nesThrottling.isThrottled()) {
       while (true) {
-        if (!this._tick()) {
+        res = this._tick();
+
+        if (res === 1) {
           break;
+        } else if (res === -1) {
+          this.stop();
+          return;
         }
       }
     }
+
     this.frameReq = requestAnimationFrame(this.frame.bind(this));
   }
 }

@@ -19,10 +19,10 @@ export var opcodes = {
       cpu.c = 0;
     }
 
-    // Useless?
     cpu.a = cpu.a & 0xff;
 
-    if (((a ^ value) & 0x80) === 0 && ((a ^ cpu.a) & 0x80) !== 0) {
+    // Overflow is set if > 127 or < -128
+    if ((a ^ cpu.a) & (value ^ cpu.a) & 0x80) {
       cpu.v = 1;
     } else {
       cpu.v = 0;
@@ -345,21 +345,21 @@ export var opcodes = {
   // Subtract with Carry
   [OPCODES.SBC]: (addr, cpu) => {
     var a = cpu.a;
-    var b = cpu.read8(addr);
+    var value = cpu.read8(addr);
     var c = cpu.c;
 
-    cpu.a = (cpu.a - b - (1 - cpu.c)) & 0xff;
+    cpu.a = (cpu.a - value - (1 - cpu.c)) & 0xff;
 
     cpu.setNegativeFlag(cpu.a);
     cpu.setZeroFlag(cpu.a);
 
-    if (a - b - (1 - c) >= 0) {
+    if (a - value - (1 - c) >= 0) {
       cpu.c = 1;
     } else {
       cpu.c = 0;
     }
 
-    if (((a ^ b) & 0x80) !== 0 && ((a ^ cpu.a) & 0x80) !== 0) {
+    if ((a ^ cpu.a) & (value ^ cpu.a) & 0x80) {
       cpu.v = 1;
     } else {
       cpu.v = 0;
