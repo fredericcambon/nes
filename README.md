@@ -1,3 +1,5 @@
+![Build](https://api.travis-ci.com/fredericcambon/nes.svg?branch=master)
+
 # OnaNES (Oh No Another NES Emulator)
 
 _In Javascript !_
