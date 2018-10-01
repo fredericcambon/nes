@@ -2,15 +2,15 @@ import { OPCODES } from "./constants.js";
 
 import { isPageCrossed } from "./utils.js";
 
-export var opcodes = {
+export const opcodes = {
   /**
    *     http://obelisk.me.uk/6502/reference.html
    */
 
   // Add with Carry
   [OPCODES.ADC]: (addr, cpu) => {
-    var a = cpu.a;
-    var value = cpu.read8(addr);
+    let a = cpu.a;
+    let value = cpu.read8(addr);
     cpu.a = a + value + cpu.c;
 
     if (cpu.a > 0xff) {
@@ -19,10 +19,10 @@ export var opcodes = {
       cpu.c = 0;
     }
 
-    // Useless?
     cpu.a = cpu.a & 0xff;
 
-    if (((a ^ value) & 0x80) === 0 && ((a ^ cpu.a) & 0x80) !== 0) {
+    // Overflow is set if > 127 or < -128
+    if ((a ^ cpu.a) & (value ^ cpu.a) & 0x80) {
       cpu.v = 1;
     } else {
       cpu.v = 0;
@@ -72,7 +72,7 @@ export var opcodes = {
 
   // Decrement Memory
   [OPCODES.DEC]: (addr, cpu) => {
-    var value = cpu.read8(addr);
+    let value = cpu.read8(addr);
     value = (value - 1) & 0xff;
 
     cpu.setNegativeFlag(value);
@@ -215,7 +215,7 @@ export var opcodes = {
 
   // Logical AND
   [OPCODES.AND]: (addr, cpu) => {
-    var value = cpu.read8(addr);
+    let value = cpu.read8(addr);
     cpu.a = cpu.a & value;
 
     cpu.setNegativeFlag(cpu.a);
@@ -276,8 +276,8 @@ export var opcodes = {
 
   // Compare
   [OPCODES.CMP]: (addr, cpu) => {
-    var value = cpu.read8(addr);
-    var tmpA = cpu.a - value;
+    let value = cpu.read8(addr);
+    let tmpA = cpu.a - value;
 
     if (cpu.a >= value) {
       cpu.c = 1;
@@ -293,8 +293,8 @@ export var opcodes = {
 
   // Compare X Register
   [OPCODES.CPX]: (addr, cpu) => {
-    var value = cpu.read8(addr);
-    var tmpX = cpu.x - value;
+    let value = cpu.read8(addr);
+    let tmpX = cpu.x - value;
 
     if (cpu.x >= value) {
       cpu.c = 1;
@@ -308,8 +308,8 @@ export var opcodes = {
 
   // Compare Y Register
   [OPCODES.CPY]: (addr, cpu) => {
-    var value = cpu.read8(addr);
-    var tmpY = cpu.y - value;
+    let value = cpu.read8(addr);
+    let tmpY = cpu.y - value;
 
     if (cpu.y >= value) {
       cpu.c = 1;
@@ -332,7 +332,7 @@ export var opcodes = {
 
   // Arithmetic Shift Left
   [OPCODES.ASL]: (addr, cpu) => {
-    var value = cpu.read8(addr);
+    let value = cpu.read8(addr);
 
     cpu.c = (value >> 7) & 1;
     value = (value << 1) & 0xff;
@@ -344,22 +344,22 @@ export var opcodes = {
 
   // Subtract with Carry
   [OPCODES.SBC]: (addr, cpu) => {
-    var a = cpu.a;
-    var b = cpu.read8(addr);
-    var c = cpu.c;
+    let a = cpu.a;
+    let value = cpu.read8(addr);
+    let c = cpu.c;
 
-    cpu.a = (cpu.a - b - (1 - cpu.c)) & 0xff;
+    cpu.a = (cpu.a - value - (1 - cpu.c)) & 0xff;
 
     cpu.setNegativeFlag(cpu.a);
     cpu.setZeroFlag(cpu.a);
 
-    if (a - b - (1 - c) >= 0) {
+    if (a - value - (1 - c) >= 0) {
       cpu.c = 1;
     } else {
       cpu.c = 0;
     }
 
-    if (((a ^ b) & 0x80) !== 0 && ((a ^ cpu.a) & 0x80) !== 0) {
+    if ((a ^ cpu.a) & (value ^ cpu.a) & 0x80) {
       cpu.v = 1;
     } else {
       cpu.v = 0;
@@ -370,7 +370,7 @@ export var opcodes = {
 
   // Exclusive OR
   [OPCODES.EOR]: (addr, cpu) => {
-    var value = cpu.read8(addr);
+    let value = cpu.read8(addr);
     cpu.a = (cpu.a ^ value) & 0xff;
 
     cpu.setZeroFlag(cpu.a);
@@ -400,7 +400,7 @@ export var opcodes = {
 
   // Increment Memory
   [OPCODES.INC]: (addr, cpu) => {
-    var value = (cpu.read8(addr) + 1) & 0xff;
+    let value = (cpu.read8(addr) + 1) & 0xff;
 
     cpu.setNegativeFlag(value);
     cpu.setZeroFlag(value);
@@ -438,7 +438,7 @@ export var opcodes = {
 
   // Logical Shift Right
   [OPCODES.LSR]: (addr, cpu) => {
-    var value = cpu.read8(addr);
+    let value = cpu.read8(addr);
 
     cpu.c = value & 1;
     value = value >> 1;
@@ -457,7 +457,7 @@ export var opcodes = {
 
   // Rotate Left (Accumulator)
   [OPCODES.ROL_ACC]: (addr, cpu) => {
-    var tmpC = cpu.c;
+    let tmpC = cpu.c;
 
     cpu.c = (cpu.a >> 7) & 1;
     cpu.a = ((cpu.a << 1) & 0xff) | tmpC;
@@ -467,8 +467,8 @@ export var opcodes = {
 
   // Rotate Left
   [OPCODES.ROL]: (addr, cpu) => {
-    var tmpC = cpu.c;
-    var value = cpu.read8(addr);
+    let tmpC = cpu.c;
+    let value = cpu.read8(addr);
 
     cpu.c = (value >> 7) & 1;
     value = ((value << 1) & 0xff) | tmpC;
@@ -480,7 +480,7 @@ export var opcodes = {
 
   // Rotate Right (Accumulator)
   [OPCODES.ROR_ACC]: (addr, cpu) => {
-    var tmpC = cpu.c;
+    let tmpC = cpu.c;
 
     cpu.c = cpu.a & 1;
     cpu.a = (cpu.a >> 1) + (tmpC << 7);
@@ -490,8 +490,8 @@ export var opcodes = {
 
   // Rotate Right
   [OPCODES.ROR]: (addr, cpu) => {
-    var tmpC = cpu.c;
-    var value = cpu.read8(addr);
+    let tmpC = cpu.c;
+    let value = cpu.read8(addr);
 
     cpu.c = value & 1;
     value = (value >> 1) + (tmpC << 7);
@@ -503,7 +503,7 @@ export var opcodes = {
 
   // Bit Test
   [OPCODES.BIT]: (addr, cpu) => {
-    var value = cpu.read8(addr);
+    let value = cpu.read8(addr);
     cpu.v = (value >> 6) & 1;
     cpu.setZeroFlag(value & cpu.a);
     cpu.setNegativeFlag(value);
