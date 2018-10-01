@@ -80,19 +80,19 @@ UI using ReactJS
 
 * Fully functional CPU
 * Functional PPU
-* UXROM, NROM, MMC1, MMC3 mappers
+* UXROM, NROM, CNROM, MMC1, MMC3 mappers
 * Save/Load
 
 ### In Progress
 
 * Additional mappers
-* Sound
+* Tests
 
 ### TODO
 
 The emulator is missing features such as
 
-* Tests
+* Sound
 * Make list of playable games
 
 And needs improvement for
