@@ -1,3 +1,10 @@
 language: node_js
 node_js:
- - "node"
+  - "node"
+
+cache: yarn
+
+install: yarn
+script:
+  - yarn lint
+  - yarn test

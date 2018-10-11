@@ -13,6 +13,12 @@ I started implementing a UI using React.js, you can find the source code [here](
 
 ### Installing
 
+#### Yarn
+
+```shell
+yarn install nes-emulator
+```
+
 #### NPM
 
 ```shell
@@ -24,8 +30,8 @@ npm install nes-emulator
 Clone the repo and
 
 ```shell
-npm install
-npm run build
+yarn install
+yarn run build
 ```
 
 ### How to Use
@@ -66,7 +72,6 @@ class NES {
 
 ![Example1](https://i.imgur.com/Znq5kHSl.png)
 
-
 This was made only for fun, to show it is possible to make this emulator run and displayed on a 3D model.
 It uses Sketchfab and its viewer API.
 
@@ -80,27 +85,27 @@ UI using ReactJS
 
 ### Done
 
-* Fully functional CPU
-* Functional PPU
-* UXROM, NROM, CNROM, MMC1, MMC3 mappers
-* Save/Load
+- Fully functional CPU
+- Functional PPU
+- UXROM, NROM, CNROM, MMC1, MMC3 mappers
+- Save/Load
 
 ### In Progress
 
-* Additional mappers
-* Tests
+- Additional mappers
+- Tests
 
 ### TODO
 
 The emulator is missing features such as
 
-* Sound
-* Make list of playable games
+- Sound
+- Make list of playable games
 
 And needs improvement for
 
-* Cycle accurate CPU
-* Some PPU glitches
+- Cycle accurate CPU
+- Some PPU glitches
 
 ## API Documentation
 
