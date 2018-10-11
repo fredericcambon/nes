@@ -1,6 +1,6 @@
 import CPUMemory from "../core/CPUMemory";
 
-import { INTERRUPTS, OPCODES } from "./constants.js";
+import { INTERRUPTS } from "./constants.js";
 
 import { instructions } from "./instructions.js";
 
