@@ -2,7 +2,8 @@
   "extends": "standard",
   "plugins": ["prettier", "babel"],
   "env": {
-    "browser": true
+    "browser": true,
+    "jest": true
   },
   "rules": {
     "quotes": ["error", "double"],
